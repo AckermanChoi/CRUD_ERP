@@ -10,7 +10,7 @@
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
 </header>
-<h2>Proveedores</h2>
+<h2>Proveedores</h2> 
 <a href="/proveedores/nuevo">Nuevo</a>
 <table border="1">
 <tr>
@@ -18,7 +18,7 @@
     <th>DNI</th>
     <th>Correo</th>
     <th>Contacto</th>
-    <th>Tipo de Suministro</th>
+    <th>Tipo de suministro</th>
     <th>Acciones</th>
 </tr>
 {% for p in proveedores %}
@@ -35,6 +35,8 @@
 </tr>
 {% endfor %}
 </table>
+
 <a href="/">Volver</a>
+
 </body>
 </html>

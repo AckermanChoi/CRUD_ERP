@@ -337,6 +337,7 @@ def eliminar_almacen(id):
     db.close()
     return redirect("/almacenes")
 
+# ---------------- PROVEEDORES ----------------
 @app.route("/proveedores")
 def proveedores():
     db = get_db()
@@ -365,6 +366,42 @@ def nuevo_proveedor():
         return redirect("/proveedores")
     return render_template("proveedores_form.html", proveedor=None)
 
+@app.route("/proveedores/editar/<int:id>", methods=["GET", "POST"])
+def editar_proveedor(id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    if request.method == "POST":
+        cursor.execute("""
+            UPDATE proveedores
+            SET nombre=%s, dni=%s, correo=%s, contacto=%s, tipo_suministro=%s
+            WHERE id=%s
+        """, (
+            request.form["nombre"],
+            request.form["dni"],
+            request.form["correo"],
+            request.form["contacto"],
+            request.form["tipo_suministro"],
+            id
+        ))
+        db.commit()
+        db.close()
+        return redirect("/proveedores")
+
+    # GET: traer datos del proveedor a editar
+    cursor.execute("SELECT * FROM proveedores WHERE id=%s", (id,))
+    proveedor = cursor.fetchone()
+    db.close()
+    return render_template("proveedores_form.html", proveedor=proveedor)
+
+@app.route("/proveedores/eliminar/<int:id>")
+def eliminar_proveedor(id):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM proveedores WHERE id=%s", (id,))
+    db.commit()
+    db.close()
+    return redirect("/proveedores")
 
 
 # ---------------- RUN ----------------
