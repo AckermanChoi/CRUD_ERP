@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+</header>
+<h1>{{ empleado and "Editar Empleado" or "Nuevo Empleado" }}</h1>
+<form method="POST">
+    Nombre: <input type="text" name="nombre" value="{{ empleado.nombre if empleado else '' }}"><br>
+    DNI: <input type="text" name="dni" value="{{ empleado.dni if empleado else '' }}"><br>
+    Correo: <input type="email" name="correo" value="{{ empleado.correo if empleado else '' }}"><br>
+    Dirección: <input type="text" name="direccion" value="{{ empleado.direccion if empleado else '' }}"><br>
+    Departamento: <input type="text" name="departamento" value="{{ empleado.departamento if empleado else '' }}"><br>
+    Salario: <input type="number" name="salario" step="0.01" value="{{ empleado.salario if empleado else '' }}"><br>
+    <input type="submit" value="{{ empleado and 'Actualizar' or 'Guardar' }}">
+</form>
+<br>
+<a href="/empleados">Volver</a>
+</body>
+</html>

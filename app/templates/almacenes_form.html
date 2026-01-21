@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+</header>
+<h1>{{ almacen and "Editar Almacén" or "Nuevo Almacén" }}</h1>
+<form method="POST">
+    Ubicación: <input type="text" name="ubicacion" value="{{ almacen.ubicacion if almacen else '' }}"><br>
+    Correo: <input type="email" name="correo" value="{{ almacen.correo if almacen else '' }}"><br>
+    Tipo de Almacén: <input type="text" name="tipo_almacen" value="{{ almacen.tipo_almacen if almacen else '' }}"><br>
+    Capacidad: <input type="number" name="capacidad" value="{{ almacen.capacidad if almacen else '' }}"><br>
+    Disponible: <input type="number" name="disponible" value="{{ almacen.disponible if almacen else '' }}"><br>
+    <input type="submit" value="{{ almacen and 'Actualizar' or 'Guardar' }}">
+</form>
+<br>
+<a href="/almacenes">Volver</a>
+</body>
+</html>

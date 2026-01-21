@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+</header>
+<h1>{{ vehiculo and "Editar Vehículo" or "Nuevo Vehículo" }}</h1>
+<form method="POST">
+    Modelo: <input type="text" name="modelo" value="{{ vehiculo.modelo if vehiculo else '' }}"><br>
+    Tipo: <input type="text" name="tipo" value="{{ vehiculo.tipo if vehiculo else '' }}"><br>
+    Año: <input type="number" name="anio" value="{{ vehiculo.anio if vehiculo else '' }}"><br>
+    Color: <input type="text" name="color" value="{{ vehiculo.color if vehiculo else '' }}"><br>
+    Precio de venta: <input type="number" name="precio" step="0.01" value="{{ vehiculo.precio_venta if vehiculo else '' }}"><br>
+    Costo fabricante: <input type="number" name="costo" step="0.01" value="{{ vehiculo.costo_fabricante if vehiculo else '' }}"><br>
+    <input type="submit" value="{{ vehiculo and 'Actualizar' or 'Guardar' }}">
+</form>
+<br>
+<a href="/vehiculos">Volver</a>
+</body>
+</html>

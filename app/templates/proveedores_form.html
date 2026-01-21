@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+</header>
+<h1>{{ proveedor and "Editar Proveedor" or "Nuevo Proveedor" }}</h1>
+<form method="POST">
+    Nombre: <input type="text" name="nombre" value="{{ proveedor.nombre if proveedor else '' }}"><br>
+    DNI: <input type="text" name="dni" value="{{ proveedor.dni if proveedor else '' }}"><br>
+    Correo: <input type="email" name="correo" value="{{ proveedor.correo if proveedor else '' }}"><br>
+    Contacto: <input type="text" name="contacto" value="{{ proveedor.contacto if proveedor else '' }}"><br>
+    Tipo de Suministro: <input type="text" name="tipo_suministro" value="{{ proveedor.tipo_suministro if proveedor else '' }}"><br>
+    <input type="submit" value="{{ proveedor and 'Actualizar' or 'Guardar' }}">
+</form>
+<br>
+<a href="/proveedores">Volver</a>
+</body>
+</html>

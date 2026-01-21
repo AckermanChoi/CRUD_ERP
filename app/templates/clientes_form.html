@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+</header>
+<h1>{{ cliente and "Editar Cliente" or "Nuevo Cliente" }}</h1>
+<form method="POST">
+    Nombre: <input type="text" name="nombre" value="{{ cliente.nombre if cliente else '' }}"><br>
+    DNI: <input type="text" name="dni" value="{{ cliente.dni if cliente else '' }}"><br>
+    Correo: <input type="email" name="correo" value="{{ cliente.correo if cliente else '' }}"><br>
+    Teléfono: <input type="text" name="telefono" value="{{ cliente.telefono if cliente else '' }}"><br>
+    País: <input type="text" name="pais" value="{{ cliente.pais if cliente else '' }}"><br>
+    Tipo: <input type="text" name="tipo" value="{{ cliente.tipo if cliente else '' }}"><br>
+    <input type="submit" value="{{ cliente and 'Actualizar' or 'Guardar' }}">
+</form>
+<br>
+<a href="/clientes">Volver</a>
+</body>
+</html>

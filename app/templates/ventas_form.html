@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+</header>
+<h1>{{ venta and "Editar Venta" or "Nueva Venta" }}</h1>
+<form method="POST">
+    Fecha: <input type="date" name="fecha" value="{{ venta.fecha if venta else '' }}"><br>
+    Total: <input type="number" name="total" step="0.01" value="{{ venta.total if venta else '' }}"><br>
+    Empleado: 
+    <select name="empleado">
+        {% for e in empleados %}
+            <option value="{{ e.id }}" {% if venta and venta.empleado_id == e.id %}selected{% endif %}>{{ e.nombre }}</option>
+        {% endfor %}
+    </select><br>
+    <input type="submit" value="{{ venta and 'Actualizar' or 'Guardar' }}">
+</form>
+<br>
+<a href="/ventas">Volver</a>
+</body>
+</html>

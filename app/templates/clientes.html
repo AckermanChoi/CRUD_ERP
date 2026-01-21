@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+</header>
+<h2>Clientes</h2>
+<a href="/clientes/nuevo">Nuevo</a>
+<table border="1">
+<tr>
+    <th>Nombre</th>
+    <th>DNI</th>
+    <th>Correo</th>
+    <th>Teléfono</th>
+    <th>País</th>
+    <th>Tipo</th>
+    <th>Acciones</th>
+</tr>
+{% for c in clientes %}
+<tr>
+    <td>{{ c.nombre }}</td>
+    <td>{{ c.dni }}</td>
+    <td>{{ c.correo }}</td>
+    <td>{{ c.telefono }}</td>
+    <td>{{ c.pais }}</td>
+    <td>{{ c.tipo }}</td>
+    <td>
+        <a href="/clientes/editar/{{ c.id }}">Editar</a> | 
+        <a href="/clientes/eliminar/{{ c.id }}">Eliminar</a>
+    </td>
+</tr>
+{% endfor %}
+</table>
+<a href="/">Volver</a>
+</body>
+</html>
