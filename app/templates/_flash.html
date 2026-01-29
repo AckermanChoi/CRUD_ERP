@@ -1,0 +1,48 @@
+<div id="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash-message {{ category }}">{{ message }} <span class="close" onclick="this.parentElement.remove()">×</span></div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</div>
+<script>
+  // Show a flash message programmatically
+  function showFlash(message, category){
+    var container = document.getElementById('flash-container');
+    if(!container) return;
+    var div = document.createElement('div');
+    div.className = 'flash-message ' + (category || 'info');
+    div.innerHTML = message + ' <span class="close" onclick="this.parentElement.remove()">×</span>';
+    container.appendChild(div);
+    // Auto dismiss
+    setTimeout(function(){
+      div.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      div.style.opacity = '0';
+      div.style.transform = 'translateY(-10px)';
+      setTimeout(function(){ if(div.parentElement) div.remove(); }, 400);
+    }, 4000);
+  }
+
+  // Intercept clicks on add buttons and show flash if user lacks permission
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.add-btn');
+    if(!btn) return;
+    var canAdd = btn.getAttribute('data-can-add');
+    if(canAdd === '1') return; // allowed, let it proceed
+    e.preventDefault();
+    showFlash('No tienes permiso para añadir', 'error');
+  });
+
+  // Existing auto-dismiss logic for server flashes
+  setTimeout(function(){
+    var msgs = document.querySelectorAll('#flash-container .flash-message');
+    msgs.forEach(function(m){
+      m.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      m.style.opacity = '0';
+      m.style.transform = 'translateY(-10px)';
+      setTimeout(function(){ if(m.parentElement) m.remove(); }, 400);
+    });
+  }, 4000);
+</script>

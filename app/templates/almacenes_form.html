@@ -9,17 +9,34 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Almacenes</div>
 </header>
-<h1>{{ almacen and "Editar Almacén" or "Nuevo Almacén" }}</h1>
-<form method="POST">
-    Ubicación: <input type="text" name="ubicacion" value="{{ almacen.ubicacion if almacen else '' }}"><br>
-    Correo: <input type="email" name="correo" value="{{ almacen.correo if almacen else '' }}"><br>
-    Tipo de Almacén: <input type="text" name="tipo_almacen" value="{{ almacen.tipo_almacen if almacen else '' }}"><br>
-    Capacidad: <input type="number" name="capacidad" value="{{ almacen.capacidad if almacen else '' }}"><br>
-    Disponible: <input type="number" name="disponible" value="{{ almacen.disponible if almacen else '' }}"><br>
-    <input type="submit" value="{{ almacen and 'Actualizar' or 'Guardar' }}">
-</form>
-<br>
-<a href="/almacenes">Volver</a>
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div></div>
+</div>
+<div class="form-wrapper">
+    <h1>{{ almacen and "Editar Almacén" or "Nuevo Almacén" }}</h1>
+    <form method="POST">
+        Ubicación: <input type="text" name="ubicacion" value="{{ almacen.ubicacion if almacen else '' }}"><br>
+        Correo: <input type="email" name="correo" value="{{ almacen.correo if almacen else '' }}"><br>
+        Tipo de Almacén: <input type="text" name="tipo_almacen" value="{{ almacen.tipo_almacen if almacen else '' }}"><br>
+        Capacidad: <input type="number" name="capacidad" value="{{ almacen.capacidad if almacen else '' }}"><br>
+        Disponible: <input type="number" name="disponible" value="{{ almacen.disponible if almacen else '' }}"><br>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+            <input class="btn btn-primary" type="submit" value="{{ almacen and 'Actualizar' or 'Guardar' }}">
+        </div>
+    </form>
+</div>
+</div>
 </body>
 </html>

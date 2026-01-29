@@ -18,7 +18,7 @@ header {
     display: flex;
     align-items: center;
     margin-bottom: 30px;
-    padding-bottom: 10px;
+    padding-bottom: 26px; /* más espacio para el título */
     border-bottom: 2px solid #e0e0e0;
 }
 
@@ -28,7 +28,7 @@ header img {
 }
 
 header h1 {
-    color: #e60012; /* Rojo Toyota */
+    color: #0d6efd; /* Azul primario */
     font-size: 2rem;
 }
 
@@ -42,15 +42,15 @@ ul {
 
 ul li a {
     text-decoration: none;
-    color: #e60012;
+    color: #0d6efd;
     padding: 8px 15px;
-    border: 1px solid #e60012;
+    border: 1px solid #0d6efd;
     border-radius: 5px;
     transition: all 0.3s ease;
 }
 
 ul li a:hover {
-    background-color: #e60012;
+    background-color: #0d6efd;
     color: #fff;
 }
 
@@ -72,7 +72,7 @@ table th, table td {
 }
 
 table th {
-    background-color: #e60012;
+    background-color: #0d6efd;
     color: #fff;
 }
 
@@ -105,12 +105,12 @@ form input[type="text"]:focus,
 form input[type="email"]:focus,
 form input[type="number"]:focus,
 form input[type="date"]:focus {
-    border-color: #e60012;
+    border-color: #0d6efd;
     outline: none;
 }
 
 form input[type="submit"] {
-    background-color: #e60012;
+    background-color: #0d6efd;
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -120,12 +120,12 @@ form input[type="submit"] {
 }
 
 form input[type="submit"]:hover {
-    background-color: #b3000f;
+    background-color: #0b5ed7;
 }
 
 /* ---------- LINKS ---------- */
 a {
-    color: #e60012;
+    color: #0d6efd;
     text-decoration: none;
     transition: all 0.3s ease;
 }
@@ -140,7 +140,7 @@ h1, h2 {
 }
 
 h1 {
-    color: #e60012;
+    color: #0d6efd;
 }
 
 /* ---------- RESPONSIVE ---------- */
@@ -159,3 +159,183 @@ h1 {
         width: 100%;
     }
 }
+
+/* ---------- CENTRADO Y FLASHES ---------- */
+/* Center page content */
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1, h2 { text-align: center; }
+
+/* Center forms and tables within container */
+form { margin: 20px auto; text-align: left; }
+
+/* Table full-width wrapper: spans the full viewport width */
+.table-wrapper {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+.table-wrapper table {
+    width: 100%;
+    margin: 0;
+}
+
+/* Table actions (Nuevo / Volver) */
+.table-actions {
+    width: 100vw; /* full viewport width to align left edge */
+    margin-left: calc(50% - 50vw);
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between; /* mantener Nuevo a la derecha y búsqueda a la izquierda */
+    align-items: center;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+    flex-wrap: wrap; /* permitir que elementos se envuelvan en pantallas pequeñas */
+}
+.search-form { flex: 0 0 auto; max-width: 360px; }
+.search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #f3f3f3;
+}
+.btn {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #fff;
+}
+
+/* Botones más compactos dentro del área de filtros */
+.table-actions .btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    border-radius: 5px;
+}
+
+/* DEBUG: ensure add buttons are visible during troubleshooting (high priority rules) */
+.add-btn {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    position: relative !important;
+    z-index: 100000 !important;
+    padding: 8px 12px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 6px 16px rgba(13,110,253,0.18) !important;
+    min-width: 64px !important;
+    background: #0d6efd !important;
+    color: #fff !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+}
+
+.table-actions { min-height: 44px; position: relative; }
+.btn-primary { background: #0d6efd; }
+.btn-primary:hover { background: #0b5ed7; }
+.btn-secondary { background: #666; }
+.btn-secondary:hover { background: #444; }
+
+/* Pagination controls (bottom-right) */
+.pagination-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 12px;
+}
+.pagination-controls .disabled { opacity: 0.6; pointer-events: none; }
+
+/* Make table headers bold */
+table th { font-weight: 700; }
+
+/* Header user position and page title */
+header { position: relative; }
+.header-right {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+}
+.page-title {
+    position: static;
+    transform: none;
+    margin: 8px auto 0; /* separacion del header */
+    font-size: 1.4rem;
+    color: #222;
+    font-weight: 800;
+    background: none; /* sin fondo */
+    padding: 0;
+    border-radius: 0;
+    z-index: 1;
+    text-align: center;
+}
+
+/* Flash messages (floating) */
+#flash-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.flash-message {
+    pointer-events: auto;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 220px;
+    max-width: 360px;
+}
+.flash-message.success { background: #2e7d32; }
+.flash-message.error { background: #c62828; }
+.flash-message.info { background: #1976d2; }
+.flash-message .close { float: right; cursor: pointer; margin-left: 8px; }
+
+/* Small screens: position center-top */
+@media (max-width: 500px) {
+    #flash-container { left: 50%; right: auto; transform: translateX(-50%); top: 10px; }
+    .page-title { position: static; transform: none; margin-top: 10px; }
+    .header-right { position: static; margin-top: 8px; }
+}
+
+/* Floating page controls bottom-right */
+#page-floating-controls {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10000;
+}
+#page-floating-controls span { background: rgba(255,255,255,0.95); padding: 6px 8px; border-radius: 6px; color:#333; }
+#page-floating-controls .btn { padding: 6px 8px; font-size: 0.95rem; }
+
+/* bottom bar: Volver left, pagination right */
+.bottom-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+@media (max-width: 500px) {
+    #page-floating-controls { right: 8px; bottom: 8px; }
+}
+
+

@@ -9,26 +9,43 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Empleados</div>
 </header>
-<h2>Empleados</h2>
-<a href="/empleados/nuevo">Nuevo</a>
-<table border="1">
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <div></div>
+    <a class="btn btn-primary add-btn" href="/empleados/nuevo" data-can-add="{{ '1' if has_permission('add') else '0' }}">Añadir</a>
+</div>
+<div class="table-wrapper">
+<table id="empleados-table" border="1">
 <tr>
+    <th>ID</th>
     <th>Nombre</th>
     <th>DNI</th>
     <th>Correo</th>
     <th>Dirección</th>
     <th>Departamento</th>
+    <th>Rol</th>
     <th>Salario</th>
     <th>Acciones</th>
 </tr>
 {% for e in empleados %}
 <tr>
+    <td>{{ e.id }}</td>
     <td>{{ e.nombre }}</td>
     <td>{{ e.dni }}</td>
     <td>{{ e.correo }}</td>
     <td>{{ e.direccion }}</td>
     <td>{{ e.departamento }}</td>
+    <td>{{ e.role }}</td>
     <td>{{ e.salario }}</td>
     <td>
         <a href="/empleados/editar/{{ e.id }}">Editar</a> | 
@@ -37,7 +54,23 @@
 </tr>
 {% endfor %}
 </table>
+<div class="bottom-bar">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div class="pagination-controls">
+        {% if page > 1 %}
+            <a class="btn btn-secondary" href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>
+        {% else %}
+            <span class="btn btn-secondary disabled">Anterior</span>
+        {% endif %}
+        <span>Pagina {{ page }} / {{ pages }}</span>
+        {% if page < pages %}
+            <a class="btn btn-primary" href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>
+        {% else %}
+            <span class="btn btn-primary disabled">Siguiente</span>
+        {% endif %}
+    </div>
+</div>
+</div>
 
-<a href="/">Volver</a>
 </body>
 </html>

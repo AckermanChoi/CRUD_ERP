@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Acceder - ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Acceder</div>
+</header>
+
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div></div>
+</div>
+<div class="form-wrapper">
+<h2>Acceder</h2>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul>
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<form method="POST">
+    Correo: <input type="email" name="correo"><br>
+    Contraseña: <input type="password" name="contrasena"><br>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <input class="btn btn-primary" type="submit" value="Acceder">
+    </div>
+</form>
+
+<p>¿No tienes cuenta? <a href="/register">Regístrate</a></p>
+</div>
+</div>
+</body>
+</html>

@@ -9,8 +9,19 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Inicio</div>
 </header>
 
+{% include '_flash.html' %}
+
+<div class="container">
 <ul>
     <li><a href="/clientes">Clientes</a></li>
     <li><a href="/empleados">Empleados</a></li>
@@ -19,6 +30,7 @@
     <li><a href="/proveedores">Proveedores</a></li>
     <li><a href="/almacenes">Almacenes</a></li>
 </ul>
+</div>
 
 </body>
 </html>

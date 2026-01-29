@@ -1,36 +1,42 @@
-CREATE DATABASE IF NOT EXISTS erp_toyota;
+DROP DATABASE IF EXISTS erp_toyota;
+CREATE DATABASE erp_toyota;
 USE erp_toyota;
 
-CREATE TABLE IF NOT EXISTS clientes (
+-- 1. TABLA EMPLEADOS (Con campos de login)
+CREATE TABLE empleados (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    dni VARCHAR(20),
+    dni VARCHAR(20) NOT NULL UNIQUE,
+    correo VARCHAR(100) NOT NULL UNIQUE, 
+    direccion VARCHAR(200),
+    departamento VARCHAR(50),
+    salario DECIMAL(10,2),
+    contrasena VARCHAR(255) NOT NULL 
+);
+
+-- 2. TABLA CLIENTES
+CREATE TABLE clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    dni VARCHAR(20) UNIQUE,
     correo VARCHAR(100),
     telefono VARCHAR(20),
     pais VARCHAR(50),
     tipo VARCHAR(50)
 );
 
-CREATE TABLE IF NOT EXISTS empleados (
+-- 3. TABLA PROVEEDORES
+CREATE TABLE proveedores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    dni VARCHAR(20),
-    correo VARCHAR(100),
-    direccion VARCHAR(200),
-    departamento VARCHAR(50),
-    salario DECIMAL(10,2)
-);
-
-CREATE TABLE IF NOT EXISTS proveedores (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    dni VARCHAR(20),
+    dni VARCHAR(20) UNIQUE,
     correo VARCHAR(100),
     contacto VARCHAR(100),
     tipo_suministro VARCHAR(100)
 );
 
-CREATE TABLE IF NOT EXISTS vehiculos (
+-- 4. TABLA VEHICULOS
+CREATE TABLE vehiculos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     modelo VARCHAR(100),
     tipo VARCHAR(50),
@@ -40,7 +46,8 @@ CREATE TABLE IF NOT EXISTS vehiculos (
     costo_fabricante DECIMAL(10,2)
 );
 
-CREATE TABLE IF NOT EXISTS almacenes (
+-- 5. TABLA ALMACENES
+CREATE TABLE almacenes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ubicacion VARCHAR(100),
     correo VARCHAR(100),
@@ -49,10 +56,12 @@ CREATE TABLE IF NOT EXISTS almacenes (
     disponible INT
 );
 
-CREATE TABLE IF NOT EXISTS ventas (
+-- 6. TABLA VENTAS
+CREATE TABLE ventas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE,
     total DECIMAL(10,2),
     empleado_id INT,
     FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE
 );
+

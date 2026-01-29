@@ -9,11 +9,25 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Almacenes</div>
 </header>
-<h2>Almacenes</h2>
-<a href="/almacenes/nuevo">Nuevo</a>
-<table border="1">
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <div></div>
+    <a class="btn btn-primary add-btn" href="/almacenes/nuevo" data-can-add="{{ '1' if has_permission('add') else '0' }}">Añadir</a>
+</div>
+<div class="table-wrapper">
+<table id="almacenes-table" border="1">
 <tr>
+    <th>ID</th>
     <th>Ubicación</th>
     <th>Correo</th>
     <th>Tipo de Almacén</th>
@@ -23,6 +37,7 @@
 </tr>
 {% for a in almacenes %}
 <tr>
+    <td>{{ a.id }}</td>
     <td>{{ a.ubicacion }}</td>
     <td>{{ a.correo }}</td>
     <td>{{ a.tipo_almacen }}</td>
@@ -35,6 +50,24 @@
 </tr>
 {% endfor %}
 </table>
-<a href="/">Volver</a>
+<div class="bottom-bar">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div class="pagination-controls">
+        {% if page > 1 %}
+            <a class="btn btn-secondary" href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>
+        {% else %}
+            <span class="btn btn-secondary disabled">Anterior</span>
+        {% endif %}
+        <span>Pagina {{ page }} / {{ pages }}</span>
+        {% if page < pages %}
+            <a class="btn btn-primary" href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>
+        {% else %}
+            <span class="btn btn-primary disabled">Siguiente</span>
+        {% endif %}
+    </div>
+</div>
+</div>
+
 </body>
+</html>
 

@@ -9,17 +9,34 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Proveedores</div>
 </header>
-<h1>{{ proveedor and "Editar Proveedor" or "Nuevo Proveedor" }}</h1>
-<form method="POST">
-    Nombre: <input type="text" name="nombre" value="{{ proveedor.nombre if proveedor else '' }}"><br>
-    DNI: <input type="text" name="dni" value="{{ proveedor.dni if proveedor else '' }}"><br>
-    Correo: <input type="email" name="correo" value="{{ proveedor.correo if proveedor else '' }}"><br>
-    Contacto: <input type="text" name="contacto" value="{{ proveedor.contacto if proveedor else '' }}"><br>
-    Tipo de Suministro: <input type="text" name="tipo_suministro" value="{{ proveedor.tipo_suministro if proveedor else '' }}"><br>
-    <input type="submit" value="{{ proveedor and 'Actualizar' or 'Guardar' }}">
-</form>
-<br>
-<a href="/proveedores">Volver</a>
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div></div>
+</div>
+<div class="form-wrapper">
+    <h1>{{ proveedor and "Editar Proveedor" or "Nuevo Proveedor" }}</h1>
+    <form method="POST">
+        Nombre: <input type="text" name="nombre" value="{{ proveedor.nombre if proveedor else '' }}"><br>
+        DNI: <input type="text" name="dni" value="{{ proveedor.dni if proveedor else '' }}"><br>
+        Correo: <input type="email" name="correo" value="{{ proveedor.correo if proveedor else '' }}"><br>
+        Contacto: <input type="text" name="contacto" value="{{ proveedor.contacto if proveedor else '' }}"><br>
+        Tipo de Suministro: <input type="text" name="tipo_suministro" value="{{ proveedor.tipo_suministro if proveedor else '' }}"><br>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+            <input class="btn btn-primary" type="submit" value="{{ proveedor and 'Actualizar' or 'Guardar' }}">
+        </div>
+    </form>
+</div>
+</div>
 </body>
 </html>

@@ -9,18 +9,46 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Empleados</div>
 </header>
-<h1>{{ empleado and "Editar Empleado" or "Nuevo Empleado" }}</h1>
-<form method="POST">
-    Nombre: <input type="text" name="nombre" value="{{ empleado.nombre if empleado else '' }}"><br>
-    DNI: <input type="text" name="dni" value="{{ empleado.dni if empleado else '' }}"><br>
-    Correo: <input type="email" name="correo" value="{{ empleado.correo if empleado else '' }}"><br>
-    Dirección: <input type="text" name="direccion" value="{{ empleado.direccion if empleado else '' }}"><br>
-    Departamento: <input type="text" name="departamento" value="{{ empleado.departamento if empleado else '' }}"><br>
-    Salario: <input type="number" name="salario" step="0.01" value="{{ empleado.salario if empleado else '' }}"><br>
-    <input type="submit" value="{{ empleado and 'Actualizar' or 'Guardar' }}">
-</form>
-<br>
-<a href="/empleados">Volver</a>
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div></div>
+</div>
+<div class="form-wrapper">
+    <h1>{{ empleado and "Editar Empleado" or "Nuevo Empleado" }}</h1>
+
+    <form method="POST">
+        Nombre: <input type="text" name="nombre" value="{{ empleado.nombre if empleado else '' }}"><br>
+        DNI: <input type="text" name="dni" value="{{ empleado.dni if empleado else '' }}"><br>
+        Correo: <input type="email" name="correo" value="{{ empleado.correo if empleado else '' }}"><br>
+        Dirección: <input type="text" name="direccion" value="{{ empleado.direccion if empleado else '' }}"><br>
+        Departamento: <input type="text" name="departamento" value="{{ empleado.departamento if empleado else '' }}"><br>
+        Salario: <input type="number" name="salario" step="0.01" value="{{ empleado.salario if empleado else '' }}"><br>
+        {% if session.empleado_role == 'jefe' %}
+        Rol:
+        <select name="role">
+            {% for r in roles %}
+            <option value="{{ r }}" {% if empleado and empleado.role == r %}selected{% endif %}>{{ r|capitalize }}</option>
+            {% endfor %}
+        </select><br>
+        {% endif %}
+        Contraseña: <input type="password" name="contrasena"> {% if empleado %}<small>(dejar en blanco para no cambiar)</small>{% endif %}<br>
+        <small>Debe tener al menos 4 caracteres, contener letras y números y no incluir símbolos.</small><br>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+            <input class="btn btn-primary" type="submit" value="{{ empleado and 'Actualizar' or 'Guardar' }}">
+        </div>
+    </form>
+</div>
+</div>
 </body>
 </html>

@@ -9,20 +9,37 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Ventas</div>
 </header>
-<h1>{{ venta and "Editar Venta" or "Nueva Venta" }}</h1>
-<form method="POST">
-    Fecha: <input type="date" name="fecha" value="{{ venta.fecha if venta else '' }}"><br>
-    Total: <input type="number" name="total" step="0.01" value="{{ venta.total if venta else '' }}"><br>
-    Empleado: 
-    <select name="empleado">
-        {% for e in empleados %}
-            <option value="{{ e.id }}" {% if venta and venta.empleado_id == e.id %}selected{% endif %}>{{ e.nombre }}</option>
-        {% endfor %}
-    </select><br>
-    <input type="submit" value="{{ venta and 'Actualizar' or 'Guardar' }}">
-</form>
-<br>
-<a href="/ventas">Volver</a>
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div></div>
+</div>
+<div class="form-wrapper">
+    <h1>{{ venta and "Editar Venta" or "Nueva Venta" }}</h1>
+    <form method="POST">
+        Fecha: <input type="date" name="fecha" value="{{ venta.fecha if venta else '' }}"><br>
+        Total: <input type="number" name="total" step="0.01" value="{{ venta.total if venta else '' }}"><br>
+        Empleado: 
+        <select name="empleado">
+            {% for e in empleados %}
+                <option value="{{ e.id }}" {% if venta and venta.empleado_id == e.id %}selected{% endif %}>{{ e.nombre }}</option>
+            {% endfor %}
+        </select><br>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+            <input class="btn btn-primary" type="submit" value="{{ venta and 'Actualizar' or 'Guardar' }}">
+        </div>
+    </form>
+</div>
+</div>
 </body>
 </html>

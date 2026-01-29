@@ -9,18 +9,35 @@
 <header>
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
     <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Vehículos</div>
 </header>
-<h1>{{ vehiculo and "Editar Vehículo" or "Nuevo Vehículo" }}</h1>
-<form method="POST">
-    Modelo: <input type="text" name="modelo" value="{{ vehiculo.modelo if vehiculo else '' }}"><br>
-    Tipo: <input type="text" name="tipo" value="{{ vehiculo.tipo if vehiculo else '' }}"><br>
-    Año: <input type="number" name="anio" value="{{ vehiculo.anio if vehiculo else '' }}"><br>
-    Color: <input type="text" name="color" value="{{ vehiculo.color if vehiculo else '' }}"><br>
-    Precio de venta: <input type="number" name="precio" step="0.01" value="{{ vehiculo.precio_venta if vehiculo else '' }}"><br>
-    Costo fabricante: <input type="number" name="costo" step="0.01" value="{{ vehiculo.costo_fabricante if vehiculo else '' }}"><br>
-    <input type="submit" value="{{ vehiculo and 'Actualizar' or 'Guardar' }}">
-</form>
-<br>
-<a href="/vehiculos">Volver</a>
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/">Volver</a>
+    <div></div>
+</div>
+<div class="form-wrapper">
+    <h1>{{ vehiculo and "Editar Vehículo" or "Nuevo Vehículo" }}</h1>
+    <form method="POST">
+        Modelo: <input type="text" name="modelo" value="{{ vehiculo.modelo if vehiculo else '' }}"><br>
+        Tipo: <input type="text" name="tipo" value="{{ vehiculo.tipo if vehiculo else '' }}"><br>
+        Año: <input type="number" name="anio" value="{{ vehiculo.anio if vehiculo else '' }}"><br>
+        Color: <input type="text" name="color" value="{{ vehiculo.color if vehiculo else '' }}"><br>
+        Precio de venta: <input type="number" name="precio" step="0.01" value="{{ vehiculo.precio_venta if vehiculo else '' }}"><br>
+        Costo fabricante: <input type="number" name="costo" step="0.01" value="{{ vehiculo.costo_fabricante if vehiculo else '' }}"><br>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+            <input class="btn btn-primary" type="submit" value="{{ vehiculo and 'Actualizar' or 'Guardar' }}">
+        </div>
+    </form>
+</div>
+</div>
 </body>
 </html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Registro</div>
+</header>
+
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/login">Volver</a>
+    <div></div>
+</div>
+<div class="form-wrapper">
+<h2>Registro de empleado</h2>
+<form method="POST">
+    Nombre: <input type="text" name="nombre"><br>
+    DNI: <input type="text" name="dni"><br>
+    Correo: <input type="email" name="correo"><br>
+    Dirección: <input type="text" name="direccion"><br>
+    Departamento: <input type="text" name="departamento" value="" placeholder="Escribe tu departamento"><br>
+    Rol: 
+    <select name="role">
+        {% for r in roles %}
+        <option value="{{ r }}">{{ r|capitalize }}</option>
+        {% endfor %}
+    </select><br>
+    Salario: <input type="number" step="0.01" name="salario"><br>
+    Contraseña: <input type="password" name="contrasena"><br>
+    <small>Debe tener al menos 4 caracteres, contener letras y números y no incluir símbolos.</small><br>
+    Confirmar contraseña: <input type="password" name="contrasena2"><br>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <input class="btn btn-primary" type="submit" value="Registrarse">
+    </div>
+</form>
+</div>
+</div>
+</body>
+</html>
