@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ERP Toyota</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
+    <h1>ERP Toyota</h1>
+    <div class="header-right">
+        {% if session.empleado_nombre %}
+            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
+        {% else %}
+            <a href="/login">Acceder</a>
+        {% endif %}
+    </div>
+    <div class="page-title">Detalle compra</div>
+</header>
+{% include '_flash.html' %}
+<div class="container">
+<div class="table-actions">
+    <a class="btn btn-secondary" href="/compras">Volver</a>
+    <a class="btn btn-secondary" href="/compras/eliminar/{{ compra.id }}">Eliminar</a>
+</div>
+
+<div class="invoice-card">
+    <h1>Factura de compra #{{ compra.id }}</h1>
+    <div class="invoice-grid">
+        <div class="field">
+            <label>Nº factura proveedor</label>
+            <div class="readonly-field">{{ compra.numero_factura }}</div>
+        </div>
+        <div class="field">
+            <label>Proveedor</label>
+            <div class="readonly-field">{{ compra.proveedor }}</div>
+        </div>
+        <div class="field">
+            <label>Fecha</label>
+            <div class="readonly-field">{{ compra.fecha }}</div>
+        </div>
+        <div class="field">
+            <label>Almacén destino</label>
+            <div class="readonly-field">{{ compra.almacen }}</div>
+        </div>
+        <div class="field">
+            <label>Total</label>
+            <div class="readonly-field">{{ compra.total }}</div>
+        </div>
+    </div>
+
+    <table class="line-table" border="1">
+        <tr>
+            <th>Linea</th>
+            <th>Codigo articulo</th>
+            <th>Nombre articulo</th>
+            <th>Cantidad</th>
+            <th>Precio compra</th>
+            <th>Total linea</th>
+        </tr>
+        {% for l in lineas %}
+        <tr>
+            <td>{{ l.linea_num }}</td>
+            <td>{{ l.codigo }}</td>
+            <td>{{ l.nombre }}</td>
+            <td>{{ l.cantidad }}</td>
+            <td>{{ l.precio_compra }}</td>
+            <td>{{ l.total_linea }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+</body>
+</html>

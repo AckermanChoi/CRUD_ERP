@@ -3,6 +3,7 @@ from app.db import get_db
 import os
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 app = Flask(
     __name__,
@@ -58,6 +59,17 @@ def is_valid_password(p):
     has_alpha = any(c.isalpha() for c in p)
     return has_digit and has_alpha
 
+MONEY_PLACES = Decimal("0.01")
+
+def to_decimal(value):
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError):
+        return None
+
+def quantize_money(value):
+    return value.quantize(MONEY_PLACES, rounding=ROUND_HALF_UP)
+
 @app.context_processor
 def inject_permissions():
     def has_permission(action):
@@ -77,7 +89,7 @@ def role_required(*roles, action=None):
             role = normalize_role(session.get("empleado_role"))
             if role == 'jefe':
                 return f(*args, **kwargs)
-             if roles:
+            if roles:
                 normalized_roles = [normalize_role(r) for r in roles]
                 if role in normalized_roles:
                     return f(*args, **kwargs)
@@ -92,6 +104,7 @@ def role_required(*roles, action=None):
             return f(*args, **kwargs)
         return wrapped
     return decorator
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -860,6 +873,343 @@ def eliminar_proveedor(id):
     db.commit()
     db.close()
     return redirect("/proveedores")
+
+
+# ---------------- COMPRAS ----------------
+@app.route("/compras")
+@login_required
+def compras():
+    page = int(request.args.get('page', 1))
+    per_page = 10
+    offset = (page - 1) * per_page
+    proveedor = request.args.get('proveedor', '').strip()
+    fecha = request.args.get('fecha', '').strip()
+    factura = request.args.get('factura', '').strip()
+
+    where_clauses = []
+    params = []
+    if proveedor:
+        like = f"%{proveedor}%"
+        where_clauses.append("(p.nombre LIKE %s OR CAST(p.id AS CHAR) LIKE %s)")
+        params.extend([like, like])
+    if fecha:
+        where_clauses.append("c.fecha = %s")
+        params.append(fecha)
+    if factura:
+        like_fact = f"%{factura}%"
+        where_clauses.append("c.numero_factura LIKE %s")
+        params.append(like_fact)
+
+    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(f"""
+        SELECT COUNT(*) AS cnt
+        FROM compras c
+        JOIN proveedores p ON c.proveedor_id = p.id
+        {where_sql}
+    """, tuple(params))
+    total = cursor.fetchone()['cnt']
+
+    cursor.execute(f"""
+        SELECT c.id, c.numero_factura, c.fecha, c.total,
+               p.nombre AS proveedor, a.ubicacion AS almacen
+        FROM compras c
+        JOIN proveedores p ON c.proveedor_id = p.id
+        JOIN almacenes a ON c.almacen_id = a.id
+        {where_sql}
+        ORDER BY c.id DESC
+        LIMIT %s OFFSET %s
+    """, tuple(params + [per_page, offset]))
+    data = cursor.fetchall()
+    pages = max(1, (total + per_page - 1) // per_page)
+    db.close()
+    return render_template(
+        "compras.html",
+        compras=data,
+        page=page,
+        per_page=per_page,
+        total=total,
+        pages=pages,
+        proveedor=proveedor,
+        fecha=fecha,
+        factura=factura
+    )
+
+
+@app.route("/compras/nuevo", methods=["GET", "POST"])
+@login_required
+@role_required(action='add')
+def nueva_compra():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
+    proveedores = cursor.fetchall()
+    cursor.execute("SELECT id, ubicacion FROM almacenes ORDER BY ubicacion")
+    almacenes = cursor.fetchall()
+
+    lineas = []
+    if request.method == "POST":
+        numero_factura = request.form.get("numero_factura", "").strip()
+        proveedor_id = request.form.get("proveedor")
+        fecha = request.form.get("fecha", "").strip()
+        almacen_id = request.form.get("almacen")
+
+        codigos = request.form.getlist("linea_codigo")
+        nombres = request.form.getlist("linea_nombre")
+        cantidades = request.form.getlist("linea_cantidad")
+        precios = request.form.getlist("linea_precio")
+
+        max_len = max(len(codigos), len(nombres), len(cantidades), len(precios))
+        errors = []
+
+        if not numero_factura or not proveedor_id or not fecha or not almacen_id:
+            errors.append("Completa todos los datos de la cabecera")
+
+        articulos_cache = {}
+        for i in range(max_len):
+            codigo = (codigos[i] if i < len(codigos) else "").strip()
+            nombre = (nombres[i] if i < len(nombres) else "").strip()
+            cantidad_raw = (cantidades[i] if i < len(cantidades) else "").strip()
+            precio_raw = (precios[i] if i < len(precios) else "").strip()
+
+            if not any([codigo, nombre, cantidad_raw, precio_raw]):
+                continue
+
+            if not codigo:
+                errors.append(f"Linea {i + 1}: falta el codigo del articulo")
+                continue
+
+            cantidad = to_decimal(cantidad_raw)
+            precio = to_decimal(precio_raw)
+            if cantidad is None or cantidad <= 0:
+                errors.append(f"Linea {i + 1}: cantidad invalida")
+                continue
+            if precio is None or precio < 0:
+                errors.append(f"Linea {i + 1}: precio invalido")
+                continue
+
+            if codigo in articulos_cache:
+                articulo = articulos_cache[codigo]
+            else:
+                cursor.execute("SELECT id, nombre FROM articulos WHERE codigo=%s", (codigo,))
+                articulo = cursor.fetchone()
+                articulos_cache[codigo] = articulo
+
+            articulo_id = articulo['id'] if articulo else None
+            nombre_final = articulo['nombre'] if articulo else nombre
+
+            if not articulo and not nombre:
+                errors.append(f"Linea {i + 1}: falta el nombre del articulo")
+                continue
+
+            lineas.append({
+                "codigo": codigo,
+                "nombre": nombre_final or nombre,
+                "cantidad": cantidad,
+                "precio": precio,
+                "total": quantize_money(cantidad * precio),
+                "articulo_id": articulo_id,
+                "actualizar_nombre": bool(articulo and nombre and nombre != articulo['nombre'])
+            })
+
+        if not lineas:
+            errors.append("Agrega al menos una linea de compra")
+
+        if errors:
+            for err in errors:
+                flash(err, "error")
+            db.close()
+            if not lineas:
+                lineas = [{} for _ in range(3)]
+            return render_template(
+                "compras_form.html",
+                proveedores=proveedores,
+                almacenes=almacenes,
+                lineas=lineas,
+                cabecera={
+                    "numero_factura": numero_factura,
+                    "proveedor_id": proveedor_id,
+                    "fecha": fecha,
+                    "almacen_id": almacen_id
+                }
+            )
+
+        total_compra = quantize_money(sum((l["total"] for l in lineas), Decimal("0")))
+
+        try:
+            db.start_transaction()
+            cur2 = db.cursor()
+            articulo_ids_creados = {}
+            for linea in lineas:
+                if linea["articulo_id"] is None:
+                    if linea["codigo"] in articulo_ids_creados:
+                        linea["articulo_id"] = articulo_ids_creados[linea["codigo"]]
+                    else:
+                        cur2.execute(
+                            "INSERT INTO articulos (codigo, nombre) VALUES (%s, %s)",
+                            (linea["codigo"], linea["nombre"])
+                        )
+                        linea["articulo_id"] = cur2.lastrowid
+                        articulo_ids_creados[linea["codigo"]] = linea["articulo_id"]
+                elif linea["actualizar_nombre"]:
+                    cur2.execute(
+                        "UPDATE articulos SET nombre=%s WHERE id=%s",
+                        (linea["nombre"], linea["articulo_id"])
+                    )
+
+            cur2.execute(
+                """
+                INSERT INTO compras (numero_factura, proveedor_id, fecha, almacen_id, total)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (numero_factura, proveedor_id, fecha, almacen_id, total_compra)
+            )
+            compra_id = cur2.lastrowid
+
+            for idx, linea in enumerate(lineas, start=1):
+                cur2.execute(
+                    """
+                    INSERT INTO compras_lineas
+                    (compra_id, linea_num, articulo_id, cantidad, precio_compra, total_linea)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        compra_id,
+                        idx,
+                        linea["articulo_id"],
+                        linea["cantidad"],
+                        linea["precio"],
+                        linea["total"]
+                    )
+                )
+
+                cur2.execute(
+                    """
+                    INSERT INTO existencias (almacen_id, articulo_id, cantidad)
+                    VALUES (%s, %s, %s)
+                    ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+                    """,
+                    (almacen_id, linea["articulo_id"], linea["cantidad"])
+                )
+
+            db.commit()
+            db.close()
+            flash("Factura de compra guardada", "success")
+            return redirect("/compras")
+        except Exception as e:
+            db.rollback()
+            db.close()
+            flash(f"Error al guardar la compra: {e}", "error")
+            return render_template(
+                "compras_form.html",
+                proveedores=proveedores,
+                almacenes=almacenes,
+                lineas=lineas,
+                cabecera={
+                    "numero_factura": numero_factura,
+                    "proveedor_id": proveedor_id,
+                    "fecha": fecha,
+                    "almacen_id": almacen_id
+                }
+            )
+
+    db.close()
+    lineas = [{} for _ in range(3)]
+    return render_template(
+        "compras_form.html",
+        proveedores=proveedores,
+        almacenes=almacenes,
+        lineas=lineas,
+        cabecera={}
+    )
+
+
+@app.route("/compras/<int:id>")
+@login_required
+def compra_detalle(id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT c.id, c.numero_factura, c.fecha, c.total,
+               p.id AS proveedor_id, p.nombre AS proveedor,
+               a.id AS almacen_id, a.ubicacion AS almacen
+        FROM compras c
+        JOIN proveedores p ON c.proveedor_id = p.id
+        JOIN almacenes a ON c.almacen_id = a.id
+        WHERE c.id = %s
+        """,
+        (id,)
+    )
+    compra = cursor.fetchone()
+    if not compra:
+        db.close()
+        flash("Compra no encontrada", "error")
+        return redirect("/compras")
+
+    cursor.execute(
+        """
+        SELECT cl.linea_num, a.codigo, a.nombre, cl.cantidad, cl.precio_compra, cl.total_linea
+        FROM compras_lineas cl
+        JOIN articulos a ON cl.articulo_id = a.id
+        WHERE cl.compra_id = %s
+        ORDER BY cl.linea_num ASC
+        """,
+        (id,)
+    )
+    lineas = cursor.fetchall()
+    db.close()
+    return render_template("compras_detalle.html", compra=compra, lineas=lineas)
+
+
+@app.route("/compras/eliminar/<int:id>")
+@login_required
+@role_required(action='delete')
+def eliminar_compra(id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT almacen_id FROM compras WHERE id=%s", (id,))
+    compra = cursor.fetchone()
+    if not compra:
+        db.close()
+        flash("Compra no encontrada", "error")
+        return redirect("/compras")
+
+    cursor.execute(
+        """
+        SELECT articulo_id, cantidad
+        FROM compras_lineas
+        WHERE compra_id = %s
+        """,
+        (id,)
+    )
+    lineas = cursor.fetchall()
+
+    try:
+        db.start_transaction()
+        cur2 = db.cursor()
+        for linea in lineas:
+            cur2.execute(
+                """
+                INSERT INTO existencias (almacen_id, articulo_id, cantidad)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+                """,
+                (compra['almacen_id'], linea['articulo_id'], -linea['cantidad'])
+            )
+
+        cur2.execute("DELETE FROM compras WHERE id=%s", (id,))
+        db.commit()
+        db.close()
+        flash("Compra eliminada", "success")
+        return redirect("/compras")
+    except Exception as e:
+        db.rollback()
+        db.close()
+        flash(f"Error al eliminar la compra: {e}", "error")
+        return redirect("/compras")
 
 
 # ---------------- RUN ----------------

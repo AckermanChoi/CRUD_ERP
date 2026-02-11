@@ -92,7 +92,8 @@ form {
 form input[type="text"],
 form input[type="email"],
 form input[type="number"],
-form input[type="date"] {
+form input[type="date"],
+form select {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
@@ -104,7 +105,8 @@ form input[type="date"] {
 form input[type="text"]:focus,
 form input[type="email"]:focus,
 form input[type="number"]:focus,
-form input[type="date"]:focus {
+form input[type="date"]:focus,
+form select:focus {
     border-color: #0d6efd;
     outline: none;
 }
@@ -121,6 +123,70 @@ form input[type="submit"] {
 
 form input[type="submit"]:hover {
     background-color: #0b5ed7;
+}
+
+/* ---------- COMPRAS / FACTURA ---------- */
+.invoice-card {
+    width: 100%;
+    max-width: 1000px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+.invoice-card form {
+    background: transparent;
+    padding: 0;
+    max-width: none;
+    box-shadow: none;
+}
+.invoice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.invoice-grid .field label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: inline-block;
+}
+.line-table input {
+    width: 100%;
+    margin-bottom: 0;
+}
+.line-table th,
+.line-table td {
+    text-align: left;
+}
+.line-actions {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+.form-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+.readonly-input {
+    background: #f3f3f3;
+    color: #333;
+}
+.readonly-field {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f7f7f7;
+}
+.compras-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.compras-filters .search-input {
+    min-width: 150px;
 }
 
 /* ---------- LINKS ---------- */
