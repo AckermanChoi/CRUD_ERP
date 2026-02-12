@@ -585,24 +585,24 @@ def ventas():
         like = f"%{q}%"
         cursor.execute("""
             SELECT COUNT(*) AS cnt FROM ventas v
-            JOIN empleados e ON v.empleado_id = e.id
-            WHERE v.id LIKE %s OR e.nombre LIKE %s OR v.fecha LIKE %s
+            JOIN clientes c ON v.cliente_id = c.id
+            WHERE v.id LIKE %s OR c.nombre LIKE %s OR v.fecha LIKE %s
         """, (like, like, like))
         total = cursor.fetchone()['cnt']
         cursor.execute("""
-            SELECT v.id, v.fecha, v.total, e.nombre AS empleado
+            SELECT v.id, v.fecha, v.total, c.nombre AS cliente
             FROM ventas v
-            JOIN empleados e ON v.empleado_id = e.id
-            WHERE v.id LIKE %s OR e.nombre LIKE %s OR v.fecha LIKE %s
+            JOIN clientes c ON v.cliente_id = c.id
+            WHERE v.id LIKE %s OR c.nombre LIKE %s OR v.fecha LIKE %s
             LIMIT %s OFFSET %s
         """, (like, like, like, per_page, offset))
     else:
         cursor.execute("SELECT COUNT(*) AS cnt FROM ventas")
         total = cursor.fetchone()['cnt']
         cursor.execute("""
-            SELECT v.id, v.fecha, v.total, e.nombre AS empleado
+            SELECT v.id, v.fecha, v.total, c.nombre AS cliente
             FROM ventas v
-            JOIN empleados e ON v.empleado_id = e.id
+            JOIN clientes c ON v.cliente_id = c.id
             LIMIT %s OFFSET %s
         """, (per_page, offset))
     data = cursor.fetchall()
@@ -616,8 +616,8 @@ def ventas():
 def nueva_venta():
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM empleados")
-    empleados = cursor.fetchall()
+    cursor.execute("SELECT * FROM clientes")
+    clientes = cursor.fetchall()
 
     if request.method == "POST":
         cursor2 = db.cursor()
@@ -626,13 +626,13 @@ def nueva_venta():
         """, (
             request.form["fecha"],
             request.form["total"],
-            request.form["empleado"]
+            request.form["cliente"]
         ))
         db.commit()
         db.close()
         return redirect("/ventas")
 
-    return render_template("ventas_form.html", empleados=empleados)
+    return render_template("ventas_form.html", clientes=clientes)
 
 @app.route("/ventas/editar/<int:id>", methods=["GET", "POST"])
 @login_required
@@ -640,18 +640,18 @@ def nueva_venta():
 def editar_venta(id):
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM empleados")
-    empleados = cursor.fetchall()
+    cursor.execute("SELECT * FROM clientes")
+    clientes = cursor.fetchall()
 
     if request.method == "POST":
         cursor2 = db.cursor()
         cursor2.execute("""
-            UPDATE ventas SET fecha=%s, total=%s, empleado_id=%s
+            UPDATE ventas SET fecha=%s, total=%s, cliente_id=%s
             WHERE id=%s
         """, (
             request.form["fecha"],
             request.form["total"],
-            request.form["empleado"],
+            request.form["cliente"],
             id
         ))
         db.commit()
@@ -661,7 +661,7 @@ def editar_venta(id):
     cursor.execute("SELECT * FROM ventas WHERE id=%s", (id,))
     venta = cursor.fetchone()
     db.close()
-    return render_template("ventas_form.html", venta=venta, empleados=empleados)
+    return render_template("ventas_form.html", venta=venta, clientes=clientes)
 
 @app.route("/ventas/eliminar/<int:id>")
 @login_required

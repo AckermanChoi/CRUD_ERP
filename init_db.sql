@@ -62,8 +62,8 @@ CREATE TABLE ventas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE,
     total DECIMAL(10,2),
-    empleado_id INT,
-    FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE
+    cliente_id INT,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
 );
 
 -- 7. TABLA ARTICULOS
