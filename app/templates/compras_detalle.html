@@ -22,7 +22,7 @@
 <div class="container">
 <div class="table-actions">
     <a class="btn btn-secondary" href="/compras">Volver</a>
-    <a class="btn btn-secondary" href="/compras/eliminar/{{ compra.id }}">Eliminar</a>
+    <a class="btn btn-secondary" href="/compras/eliminar/{{ compra.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
 </div>
 
 <div class="invoice-card">

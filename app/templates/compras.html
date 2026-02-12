@@ -48,7 +48,7 @@
     <td>{{ c.total }}</td>
     <td>
         <a href="/compras/{{ c.id }}">Ver</a> |
-        <a href="/compras/eliminar/{{ c.id }}">Eliminar</a>
+        <a href="/compras/eliminar/{{ c.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>
 {% endfor %}

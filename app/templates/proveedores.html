@@ -47,7 +47,7 @@
     <td>{{ p.tipo_suministro }}</td>
     <td>
         <a href="/proveedores/editar/{{ p.id }}">Editar</a> | 
-        <a href="/proveedores/eliminar/{{ p.id }}">Eliminar</a>
+        <a href="/proveedores/eliminar/{{ p.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>
 {% endfor %}

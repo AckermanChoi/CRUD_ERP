@@ -45,7 +45,7 @@
     <td>{{ a.disponible }}</td>
     <td>
         <a href="/almacenes/editar/{{ a.id }}">Editar</a> | 
-        <a href="/almacenes/eliminar/{{ a.id }}">Eliminar</a>
+        <a href="/almacenes/eliminar/{{ a.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>
 {% endfor %}

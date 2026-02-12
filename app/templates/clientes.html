@@ -47,7 +47,7 @@
     <td>{{ c.tipo }}</td>
     <td>
         <a href="/clientes/editar/{{ c.id }}">Editar</a> | 
-        <a href="/clientes/eliminar/{{ c.id }}">Eliminar</a>
+        <a href="/clientes/eliminar/{{ c.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>
 {% endfor %}

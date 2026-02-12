@@ -47,7 +47,7 @@
     <td>{{ v.costo_fabricante }}</td>
     <td>
         <a href="/vehiculos/editar/{{ v.id }}">Editar</a> | 
-        <a href="/vehiculos/eliminar/{{ v.id }}">Eliminar</a>
+        <a href="/vehiculos/eliminar/{{ v.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>
 {% endfor %}

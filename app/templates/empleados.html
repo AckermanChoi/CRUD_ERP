@@ -49,7 +49,7 @@
     <td>{{ e.salario }}</td>
     <td>
         <a href="/empleados/editar/{{ e.id }}">Editar</a> | 
-        <a href="/empleados/eliminar/{{ e.id }}">Eliminar</a>
+        <a href="/empleados/eliminar/{{ e.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>
 {% endfor %}

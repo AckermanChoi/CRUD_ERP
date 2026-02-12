@@ -41,7 +41,7 @@
     <td>{{ v.cliente }}</td>
     <td>
         <a href="/ventas/editar/{{ v.id }}">Editar</a> | 
-        <a href="/ventas/eliminar/{{ v.id }}">Eliminar</a>
+        <a href="/ventas/eliminar/{{ v.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>
 {% endfor %}
