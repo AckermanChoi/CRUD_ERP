@@ -21,12 +21,7 @@
 {% include '_flash.html' %}
 <div class="container">
 <div class="table-actions">
-    <form class="search-form compras-filters" method="GET">
-        <input class="search-input" type="text" name="proveedor" placeholder="Proveedor" value="{{ proveedor }}">
-        <input class="search-input" type="date" name="fecha" value="{{ fecha }}">
-        <button class="btn btn-secondary" type="submit">Filtrar</button>
-        <a class="btn btn-secondary" href="/compras">Limpiar</a>
-    </form>
+    <div></div>
     <a class="btn btn-primary add-btn" href="/compras/nuevo" data-can-add="{{ '1' if has_permission('add') else '0' }}">Añadir</a>
 </div>
 <div class="table-wrapper">
