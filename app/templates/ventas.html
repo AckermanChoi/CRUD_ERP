@@ -31,6 +31,7 @@
     <th>Fecha</th>
     <th>Total</th>
     <th>Cliente</th>
+    <th>Almacen</th>
     <th>Acciones</th>
 </tr>
 {% for v in ventas %}
@@ -39,8 +40,9 @@
     <td>{{ v.fecha }}</td>
     <td>{{ v.total }}</td>
     <td>{{ v.cliente }}</td>
+    <td>{{ v.almacen }}</td>
     <td>
-        <a href="/ventas/editar/{{ v.id }}">Editar</a> | 
+        <a href="/ventas/{{ v.id }}">Ver</a> | 
         <a href="/ventas/eliminar/{{ v.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
     </td>
 </tr>

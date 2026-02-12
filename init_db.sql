@@ -60,10 +60,12 @@ CREATE TABLE almacenes (
 -- 6. TABLA VENTAS
 CREATE TABLE ventas (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fecha DATE,
-    total DECIMAL(10,2),
-    cliente_id INT,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+    fecha DATE NOT NULL,
+    total DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cliente_id INT NOT NULL,
+    almacen_id INT NOT NULL,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
+    FOREIGN KEY (almacen_id) REFERENCES almacenes(id)
 );
 
 -- 7. TABLA ARTICULOS
@@ -98,7 +100,22 @@ CREATE TABLE compras_lineas (
     FOREIGN KEY (articulo_id) REFERENCES articulos(id)
 );
 
--- 10. TABLA EXISTENCIAS (POR ALMACEN Y ARTICULO)
+-- 10. TABLA VENTAS_LINEAS (DETALLE)
+CREATE TABLE ventas_lineas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    venta_id INT NOT NULL,
+    linea_num INT NOT NULL,
+    articulo_id INT NOT NULL,
+    cantidad DECIMAL(12,2) NOT NULL,
+    precio_venta DECIMAL(12,2) NOT NULL,
+    iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
+    descuento_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
+    total_linea DECIMAL(12,2) NOT NULL,
+    FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE,
+    FOREIGN KEY (articulo_id) REFERENCES articulos(id)
+);
+
+-- 11. TABLA EXISTENCIAS (POR ALMACEN Y ARTICULO)
 CREATE TABLE existencias (
     almacen_id INT NOT NULL,
     articulo_id INT NOT NULL,

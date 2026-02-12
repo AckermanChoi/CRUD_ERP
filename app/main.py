@@ -317,6 +317,30 @@ def eliminar_cliente(id):
     db.close()
     return redirect("/clientes")
 
+
+@app.route("/clientes/buscar")
+@login_required
+def buscar_clientes():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify([])
+    like = f"%{q}%"
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT id, nombre, dni, correo, telefono, pais, tipo
+        FROM clientes
+        WHERE nombre LIKE %s OR dni LIKE %s
+        ORDER BY nombre
+        LIMIT 10
+        """,
+        (like, like)
+    )
+    data = cursor.fetchall()
+    db.close()
+    return jsonify(data)
+
 # ---------------- EMPLEADOS ----------------
 @app.route("/empleados")
 @login_required
@@ -586,23 +610,26 @@ def ventas():
         cursor.execute("""
             SELECT COUNT(*) AS cnt FROM ventas v
             JOIN clientes c ON v.cliente_id = c.id
-            WHERE v.id LIKE %s OR c.nombre LIKE %s OR v.fecha LIKE %s
-        """, (like, like, like))
+            JOIN almacenes a ON v.almacen_id = a.id
+            WHERE v.id LIKE %s OR c.nombre LIKE %s OR v.fecha LIKE %s OR a.ubicacion LIKE %s
+        """, (like, like, like, like))
         total = cursor.fetchone()['cnt']
         cursor.execute("""
-            SELECT v.id, v.fecha, v.total, c.nombre AS cliente
+            SELECT v.id, v.fecha, v.total, c.nombre AS cliente, a.ubicacion AS almacen
             FROM ventas v
             JOIN clientes c ON v.cliente_id = c.id
-            WHERE v.id LIKE %s OR c.nombre LIKE %s OR v.fecha LIKE %s
+            JOIN almacenes a ON v.almacen_id = a.id
+            WHERE v.id LIKE %s OR c.nombre LIKE %s OR v.fecha LIKE %s OR a.ubicacion LIKE %s
             LIMIT %s OFFSET %s
-        """, (like, like, like, per_page, offset))
+        """, (like, like, like, like, per_page, offset))
     else:
         cursor.execute("SELECT COUNT(*) AS cnt FROM ventas")
         total = cursor.fetchone()['cnt']
         cursor.execute("""
-            SELECT v.id, v.fecha, v.total, c.nombre AS cliente
+            SELECT v.id, v.fecha, v.total, c.nombre AS cliente, a.ubicacion AS almacen
             FROM ventas v
             JOIN clientes c ON v.cliente_id = c.id
+            JOIN almacenes a ON v.almacen_id = a.id
             LIMIT %s OFFSET %s
         """, (per_page, offset))
     data = cursor.fetchall()
@@ -616,63 +643,372 @@ def ventas():
 def nueva_venta():
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM clientes")
+    cursor.execute("SELECT id, nombre FROM clientes ORDER BY nombre")
     clientes = cursor.fetchall()
+    cursor.execute("SELECT id, ubicacion FROM almacenes ORDER BY ubicacion")
+    almacenes = cursor.fetchall()
+
+    lineas = []
 
     if request.method == "POST":
-        cursor2 = db.cursor()
-        cursor2.execute("""
-            INSERT INTO ventas VALUES (NULL,%s,%s,%s)
-        """, (
-            request.form["fecha"],
-            request.form["total"],
-            request.form["cliente"]
-        ))
-        db.commit()
-        db.close()
-        return redirect("/ventas")
+        cliente_id = request.form.get("cliente_id")
+        cliente_nombre = request.form.get("cliente_nombre", "").strip()
+        cliente_dni = request.form.get("cliente_dni", "").strip()
+        cliente_correo = request.form.get("cliente_correo", "").strip()
+        cliente_telefono = request.form.get("cliente_telefono", "").strip()
+        cliente_pais = request.form.get("cliente_pais", "").strip()
+        cliente_tipo = request.form.get("cliente_tipo", "").strip()
+        fecha = request.form.get("fecha", "").strip()
+        almacen_id = request.form.get("almacen")
 
-    return render_template("ventas_form.html", clientes=clientes)
+        nombres = request.form.getlist("linea_nombre")
+        cantidades = request.form.getlist("linea_cantidad")
+        precios = request.form.getlist("linea_precio")
+        ivas = request.form.getlist("linea_iva")
+        descuentos = request.form.getlist("linea_descuento")
+
+        max_len = max(len(nombres), len(cantidades), len(precios), len(ivas), len(descuentos))
+        errors = []
+
+        if not fecha or not almacen_id:
+            errors.append("Completa todos los datos de la cabecera")
+
+        if not cliente_id:
+            if not cliente_nombre or not cliente_dni:
+                errors.append("Indica un cliente existente o completa los datos del nuevo cliente")
+
+        articulos_cache = {}
+        for i in range(max_len):
+            nombre = (nombres[i] if i < len(nombres) else "").strip()
+            cantidad_raw = (cantidades[i] if i < len(cantidades) else "").strip()
+            precio_raw = (precios[i] if i < len(precios) else "").strip()
+            iva_raw = (ivas[i] if i < len(ivas) else "").strip()
+            descuento_raw = (descuentos[i] if i < len(descuentos) else "").strip()
+
+            if not any([nombre, cantidad_raw, precio_raw]):
+                continue
+
+            if not nombre:
+                errors.append(f"Linea {i + 1}: falta el nombre del articulo")
+                continue
+
+            cantidad = to_decimal(cantidad_raw)
+            precio = to_decimal(precio_raw)
+            iva_pct = to_decimal(iva_raw) if iva_raw else Decimal("0")
+            descuento_pct = to_decimal(descuento_raw) if descuento_raw else Decimal("0")
+            if cantidad is None or cantidad <= 0:
+                errors.append(f"Linea {i + 1}: cantidad invalida")
+                continue
+            if precio is None or precio < 0:
+                errors.append(f"Linea {i + 1}: precio invalido")
+                continue
+            if iva_pct is None or iva_pct < 0:
+                errors.append(f"Linea {i + 1}: IVA invalido")
+                continue
+            if descuento_pct is None or descuento_pct < 0:
+                errors.append(f"Linea {i + 1}: descuento invalido")
+                continue
+
+            if nombre in articulos_cache:
+                articulo = articulos_cache[nombre]
+            else:
+                cursor.execute("SELECT id, nombre FROM articulos WHERE nombre=%s", (nombre,))
+                articulo = cursor.fetchone()
+                articulos_cache[nombre] = articulo
+
+            articulo_id = articulo['id'] if articulo else None
+            nombre_final = articulo['nombre'] if articulo else nombre
+
+            base = cantidad * precio
+            total_con_iva = base * (Decimal("1") + (iva_pct / Decimal("100")))
+            total_linea = total_con_iva * (Decimal("1") - (descuento_pct / Decimal("100")))
+
+            lineas.append({
+                "nombre": nombre_final or nombre,
+                "cantidad": cantidad,
+                "precio": precio,
+                "iva_pct": iva_pct,
+                "descuento_pct": descuento_pct,
+                "total": quantize_money(total_linea),
+                "articulo_id": articulo_id,
+                "actualizar_nombre": bool(articulo and nombre and nombre != articulo['nombre'])
+            })
+
+        if not lineas:
+            errors.append("Agrega al menos una linea de venta")
+
+        if errors:
+            for err in errors:
+                flash(err, "error")
+            db.close()
+            if not lineas:
+                lineas = [{} for _ in range(3)]
+            return render_template(
+                "ventas_form.html",
+                clientes=clientes,
+                almacenes=almacenes,
+                lineas=lineas,
+                cabecera={
+                    "cliente_id": cliente_id,
+                    "cliente_nombre": cliente_nombre,
+                    "cliente_dni": cliente_dni,
+                    "cliente_correo": cliente_correo,
+                    "cliente_telefono": cliente_telefono,
+                    "cliente_pais": cliente_pais,
+                    "cliente_tipo": cliente_tipo,
+                    "fecha": fecha,
+                    "almacen_id": almacen_id
+                }
+            )
+
+        total_venta = quantize_money(sum((l["total"] for l in lineas), Decimal("0")))
+        total_unidades = sum((l["cantidad"] for l in lineas), Decimal("0"))
+
+        try:
+            cur2 = db.cursor(dictionary=True)
+            cur2.execute(
+                "SELECT id FROM almacenes WHERE id=%s FOR UPDATE",
+                (almacen_id,)
+            )
+            almacen = cur2.fetchone()
+            if not almacen:
+                raise ValueError("Almacen no encontrado")
+
+            cur2 = db.cursor()
+            articulo_ids_creados = {}
+            for linea in lineas:
+                if linea["articulo_id"] is None:
+                    if linea["nombre"] in articulo_ids_creados:
+                        linea["articulo_id"] = articulo_ids_creados[linea["nombre"]]
+                    else:
+                        cur2.execute(
+                            "INSERT INTO articulos (nombre) VALUES (%s)",
+                            (linea["nombre"],)
+                        )
+                        linea["articulo_id"] = cur2.lastrowid
+                        articulo_ids_creados[linea["nombre"]] = linea["articulo_id"]
+                elif linea["actualizar_nombre"]:
+                    cur2.execute(
+                        "UPDATE articulos SET nombre=%s WHERE id=%s",
+                        (linea["nombre"], linea["articulo_id"])
+                    )
+
+            required = {}
+            for linea in lineas:
+                required[linea["articulo_id"]] = required.get(linea["articulo_id"], Decimal("0")) + linea["cantidad"]
+
+            placeholders = ", ".join(["%s"] * len(required))
+            cur3 = db.cursor(dictionary=True)
+            cur3.execute(
+                f"""
+                SELECT articulo_id, cantidad
+                FROM existencias
+                WHERE almacen_id=%s AND articulo_id IN ({placeholders})
+                FOR UPDATE
+                """,
+                (almacen_id, *required.keys())
+            )
+            stock_rows = cur3.fetchall()
+            stock_map = {row["articulo_id"]: (to_decimal(row["cantidad"]) or Decimal("0")) for row in stock_rows}
+
+            for articulo_id, qty in required.items():
+                disponible = stock_map.get(articulo_id, Decimal("0"))
+                if disponible < qty:
+                    nombre_articulo = next((l["nombre"] for l in lineas if l["articulo_id"] == articulo_id), f"ID {articulo_id}")
+                    raise ValueError(f"Stock insuficiente para el articulo {nombre_articulo}")
+
+            if not cliente_id:
+                cur2.execute(
+                    """
+                    INSERT INTO clientes (nombre, dni, correo, telefono, pais, tipo)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        cliente_nombre,
+                        cliente_dni,
+                        cliente_correo or None,
+                        cliente_telefono or None,
+                        cliente_pais or None,
+                        cliente_tipo or None
+                    )
+                )
+                cliente_id = cur2.lastrowid
+
+            cur2.execute(
+                """
+                INSERT INTO ventas (fecha, total, cliente_id, almacen_id)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (fecha, total_venta, cliente_id, almacen_id)
+            )
+            venta_id = cur2.lastrowid
+
+            for idx, linea in enumerate(lineas, start=1):
+                cur2.execute(
+                    """
+                    INSERT INTO ventas_lineas
+                    (venta_id, linea_num, articulo_id, cantidad, precio_venta, iva_pct, descuento_pct, total_linea)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        venta_id,
+                        idx,
+                        linea["articulo_id"],
+                        linea["cantidad"],
+                        linea["precio"],
+                        linea["iva_pct"],
+                        linea["descuento_pct"],
+                        linea["total"]
+                    )
+                )
+
+                cur2.execute(
+                    """
+                    INSERT INTO existencias (almacen_id, articulo_id, cantidad)
+                    VALUES (%s, %s, %s)
+                    ON DUPLICATE KEY UPDATE cantidad = cantidad - VALUES(cantidad)
+                    """,
+                    (almacen_id, linea["articulo_id"], linea["cantidad"])
+                )
+
+            cur2.execute(
+                "UPDATE almacenes SET disponible = disponible + %s WHERE id=%s",
+                (total_unidades, almacen_id)
+            )
+
+            db.commit()
+            db.close()
+            flash("Factura de venta guardada", "success")
+            return redirect("/ventas")
+        except Exception as e:
+            db.rollback()
+            db.close()
+            flash(f"Error al guardar la venta: {e}", "error")
+            return render_template(
+                "ventas_form.html",
+                clientes=clientes,
+                almacenes=almacenes,
+                lineas=lineas,
+                cabecera={
+                    "cliente_id": cliente_id,
+                    "cliente_nombre": cliente_nombre,
+                    "cliente_dni": cliente_dni,
+                    "cliente_correo": cliente_correo,
+                    "cliente_telefono": cliente_telefono,
+                    "cliente_pais": cliente_pais,
+                    "cliente_tipo": cliente_tipo,
+                    "fecha": fecha,
+                    "almacen_id": almacen_id
+                }
+            )
+
+    db.close()
+    lineas = [{} for _ in range(3)]
+    return render_template(
+        "ventas_form.html",
+        clientes=clientes,
+        almacenes=almacenes,
+        lineas=lineas,
+        cabecera={}
+    )
 
 @app.route("/ventas/editar/<int:id>", methods=["GET", "POST"])
 @login_required
 @role_required(action='edit')
 def editar_venta(id):
+    flash("La edicion de ventas no esta disponible. Elimina y crea una nueva.", "error")
+    return redirect("/ventas")
+
+
+@app.route("/ventas/<int:id>")
+@login_required
+def venta_detalle(id):
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM clientes")
-    clientes = cursor.fetchall()
-
-    if request.method == "POST":
-        cursor2 = db.cursor()
-        cursor2.execute("""
-            UPDATE ventas SET fecha=%s, total=%s, cliente_id=%s
-            WHERE id=%s
-        """, (
-            request.form["fecha"],
-            request.form["total"],
-            request.form["cliente"],
-            id
-        ))
-        db.commit()
+    cursor.execute(
+        """
+        SELECT v.id, v.fecha, v.total,
+               c.id AS cliente_id, c.nombre AS cliente,
+               a.id AS almacen_id, a.ubicacion AS almacen
+        FROM ventas v
+        JOIN clientes c ON v.cliente_id = c.id
+        JOIN almacenes a ON v.almacen_id = a.id
+        WHERE v.id = %s
+        """,
+        (id,)
+    )
+    venta = cursor.fetchone()
+    if not venta:
         db.close()
+        flash("Venta no encontrada", "error")
         return redirect("/ventas")
 
-    cursor.execute("SELECT * FROM ventas WHERE id=%s", (id,))
-    venta = cursor.fetchone()
+    cursor.execute(
+        """
+        SELECT vl.linea_num, a.nombre, vl.cantidad, vl.precio_venta,
+               vl.iva_pct, vl.descuento_pct, vl.total_linea
+        FROM ventas_lineas vl
+        JOIN articulos a ON vl.articulo_id = a.id
+        WHERE vl.venta_id = %s
+        ORDER BY vl.linea_num ASC
+        """,
+        (id,)
+    )
+    lineas = cursor.fetchall()
     db.close()
-    return render_template("ventas_form.html", venta=venta, clientes=clientes)
+    return render_template("ventas_detalle.html", venta=venta, lineas=lineas)
 
 @app.route("/ventas/eliminar/<int:id>")
 @login_required
 @role_required(action='delete')
 def eliminar_venta(id):
     db = get_db()
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM ventas WHERE id=%s", (id,))
-    db.commit()
-    db.close()
-    return redirect("/ventas")
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT almacen_id FROM ventas WHERE id=%s", (id,))
+    venta = cursor.fetchone()
+    if not venta:
+        db.close()
+        flash("Venta no encontrada", "error")
+        return redirect("/ventas")
+
+    cursor.execute(
+        """
+        SELECT articulo_id, cantidad
+        FROM ventas_lineas
+        WHERE venta_id = %s
+        """,
+        (id,)
+    )
+    lineas = cursor.fetchall()
+
+    try:
+        cur2 = db.cursor()
+        total_unidades = sum((to_decimal(l['cantidad']) or Decimal("0") for l in lineas), Decimal("0"))
+        for linea in lineas:
+            cur2.execute(
+                """
+                INSERT INTO existencias (almacen_id, articulo_id, cantidad)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+                """,
+                (venta['almacen_id'], linea['articulo_id'], linea['cantidad'])
+            )
+
+        cur2.execute(
+            "UPDATE almacenes SET disponible = disponible - %s WHERE id=%s",
+            (total_unidades, venta['almacen_id'])
+        )
+
+        cur2.execute("DELETE FROM ventas WHERE id=%s", (id,))
+        db.commit()
+        db.close()
+        flash("Venta eliminada", "success")
+        return redirect("/ventas")
+    except Exception as e:
+        db.rollback()
+        db.close()
+        flash(f"Error al eliminar la venta: {e}", "error")
+        return redirect("/ventas")
 
 # ---------------- ALMACENES ----------------
 @app.route("/almacenes")
