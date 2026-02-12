@@ -69,14 +69,12 @@ CREATE TABLE ventas (
 -- 7. TABLA ARTICULOS
 CREATE TABLE articulos (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    codigo VARCHAR(30) NOT NULL UNIQUE,
-    nombre VARCHAR(120) NOT NULL
+    nombre VARCHAR(120) NOT NULL UNIQUE
 );
 
 -- 8. TABLA COMPRAS (CABECERA)
 CREATE TABLE compras (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    numero_factura VARCHAR(50) NOT NULL,
     proveedor_id INT NOT NULL,
     fecha DATE NOT NULL,
     almacen_id INT NOT NULL,
@@ -139,14 +137,14 @@ INSERT INTO almacenes (ubicacion, correo, tipo_almacen, capacidad, disponible) V
 ('Madrid Central', 'almacen-madrid@example.com', 'Principal', 1000, 600),
 ('Barcelona', 'almacen-bcn@example.com', 'Tienda', 500, 350);
 
-INSERT INTO articulos (codigo, nombre) VALUES
-('A-100', 'Filtro aceite'),
-('A-200', 'Pastillas freno'),
-('A-300', 'Bateria 12V');
+INSERT INTO articulos (nombre) VALUES
+('Filtro aceite'),
+('Pastillas freno'),
+('Bateria 12V');
 
-INSERT INTO compras (numero_factura, proveedor_id, fecha, almacen_id, total) VALUES
-('FAC-1001', 1, '2026-02-01', 1, 532.40),
-('FAC-1002', 2, '2026-02-05', 2, 343.83);
+INSERT INTO compras (proveedor_id, fecha, almacen_id, total) VALUES
+(1, '2026-02-01', 1, 532.40),
+(2, '2026-02-05', 2, 343.83);
 
 INSERT INTO compras_lineas (compra_id, linea_num, articulo_id, cantidad, precio_compra, iva_pct, descuento_pct, total_linea) VALUES
 (1, 1, 1, 10, 12.50, 21.00, 0.00, 151.25),

@@ -46,10 +46,6 @@
 
         <div class="compras-row">
             <div class="field">
-                <label for="numero_factura">Nº factura</label>
-                <input type="text" id="numero_factura" name="numero_factura" value="{{ cabecera.numero_factura if cabecera else '' }}" required>
-            </div>
-            <div class="field">
                 <label for="proveedor_id">ID Proveedor</label>
                 <input type="text" id="proveedor_id_display" class="readonly-input" value="{{ cabecera.proveedor_id if cabecera else '' }}" readonly>
                 <input type="hidden" id="proveedor_id" name="proveedor_id" value="{{ cabecera.proveedor_id if cabecera else '' }}">
@@ -100,7 +96,6 @@
             <table class="line-table" border="1">
                 <tr>
                     <th>Linea</th>
-                    <th>Codigo articulo</th>
                     <th>Nombre articulo</th>
                     <th>Cantidad</th>
                     <th>Precio unitario</th>
@@ -112,7 +107,6 @@
                 {% for linea in lineas %}
                 <tr class="linea-row">
                     <td class="linea-num">{{ loop.index }}</td>
-                    <td><input type="text" name="linea_codigo" value="{{ linea.codigo or '' }}"></td>
                     <td><input type="text" name="linea_nombre" value="{{ linea.nombre or '' }}"></td>
                     <td><input type="number" step="0.01" min="0" name="linea_cantidad" value="{{ linea.cantidad or '' }}"></td>
                     <td><input type="number" step="0.01" min="0" name="linea_precio" value="{{ linea.precio or '' }}"></td>
@@ -164,7 +158,6 @@
         row.className = 'linea-row';
         row.innerHTML = "" +
             "<td class='linea-num'></td>" +
-            "<td><input type='text' name='linea_codigo'></td>" +
             "<td><input type='text' name='linea_nombre'></td>" +
             "<td><input type='number' step='0.01' min='0' name='linea_cantidad'></td>" +
             "<td><input type='number' step='0.01' min='0' name='linea_precio'></td>" +

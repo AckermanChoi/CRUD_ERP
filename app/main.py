@@ -908,7 +908,6 @@ def compras():
     offset = (page - 1) * per_page
     proveedor = request.args.get('proveedor', '').strip()
     fecha = request.args.get('fecha', '').strip()
-    factura = request.args.get('factura', '').strip()
 
     where_clauses = []
     params = []
@@ -919,10 +918,6 @@ def compras():
     if fecha:
         where_clauses.append("c.fecha = %s")
         params.append(fecha)
-    if factura:
-        like_fact = f"%{factura}%"
-        where_clauses.append("c.numero_factura LIKE %s")
-        params.append(like_fact)
 
     where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 
@@ -937,7 +932,7 @@ def compras():
     total = cursor.fetchone()['cnt']
 
     cursor.execute(f"""
-        SELECT c.id, c.numero_factura, c.fecha, c.total,
+        SELECT c.id, c.fecha, c.total,
                p.nombre AS proveedor, a.ubicacion AS almacen
         FROM compras c
         JOIN proveedores p ON c.proveedor_id = p.id
@@ -957,8 +952,7 @@ def compras():
         total=total,
         pages=pages,
         proveedor=proveedor,
-        fecha=fecha,
-        factura=factura
+        fecha=fecha
     )
 
 
@@ -975,7 +969,6 @@ def nueva_compra():
 
     lineas = []
     if request.method == "POST":
-        numero_factura = request.form.get("numero_factura", "").strip()
         proveedor_id = request.form.get("proveedor_id")
         proveedor_nombre = request.form.get("proveedor_nombre", "").strip()
         proveedor_apellido = request.form.get("proveedor_apellido", "").strip()
@@ -986,17 +979,16 @@ def nueva_compra():
         fecha = request.form.get("fecha", "").strip()
         almacen_id = request.form.get("almacen")
 
-        codigos = request.form.getlist("linea_codigo")
         nombres = request.form.getlist("linea_nombre")
         cantidades = request.form.getlist("linea_cantidad")
         precios = request.form.getlist("linea_precio")
         ivas = request.form.getlist("linea_iva")
         descuentos = request.form.getlist("linea_descuento")
 
-        max_len = max(len(codigos), len(nombres), len(cantidades), len(precios), len(ivas), len(descuentos))
+        max_len = max(len(nombres), len(cantidades), len(precios), len(ivas), len(descuentos))
         errors = []
 
-        if not numero_factura or not fecha or not almacen_id:
+        if not fecha or not almacen_id:
             errors.append("Completa todos los datos de la cabecera")
 
         if not proveedor_id:
@@ -1005,18 +997,17 @@ def nueva_compra():
 
         articulos_cache = {}
         for i in range(max_len):
-            codigo = (codigos[i] if i < len(codigos) else "").strip()
             nombre = (nombres[i] if i < len(nombres) else "").strip()
             cantidad_raw = (cantidades[i] if i < len(cantidades) else "").strip()
             precio_raw = (precios[i] if i < len(precios) else "").strip()
             iva_raw = (ivas[i] if i < len(ivas) else "").strip()
             descuento_raw = (descuentos[i] if i < len(descuentos) else "").strip()
 
-            if not any([codigo, nombre, cantidad_raw, precio_raw]):
+            if not any([nombre, cantidad_raw, precio_raw]):
                 continue
 
-            if not codigo:
-                errors.append(f"Linea {i + 1}: falta el codigo del articulo")
+            if not nombre:
+                errors.append(f"Linea {i + 1}: falta el nombre del articulo")
                 continue
 
             cantidad = to_decimal(cantidad_raw)
@@ -1036,26 +1027,21 @@ def nueva_compra():
                 errors.append(f"Linea {i + 1}: descuento invalido")
                 continue
 
-            if codigo in articulos_cache:
-                articulo = articulos_cache[codigo]
+            if nombre in articulos_cache:
+                articulo = articulos_cache[nombre]
             else:
-                cursor.execute("SELECT id, nombre FROM articulos WHERE codigo=%s", (codigo,))
+                cursor.execute("SELECT id, nombre FROM articulos WHERE nombre=%s", (nombre,))
                 articulo = cursor.fetchone()
-                articulos_cache[codigo] = articulo
+                articulos_cache[nombre] = articulo
 
             articulo_id = articulo['id'] if articulo else None
             nombre_final = articulo['nombre'] if articulo else nombre
-
-            if not articulo and not nombre:
-                errors.append(f"Linea {i + 1}: falta el nombre del articulo")
-                continue
 
             base = cantidad * precio
             total_con_iva = base * (Decimal("1") + (iva_pct / Decimal("100")))
             total_linea = total_con_iva * (Decimal("1") - (descuento_pct / Decimal("100")))
 
             lineas.append({
-                "codigo": codigo,
                 "nombre": nombre_final or nombre,
                 "cantidad": cantidad,
                 "precio": precio,
@@ -1081,7 +1067,6 @@ def nueva_compra():
                 almacenes=almacenes,
                 lineas=lineas,
                 cabecera={
-                    "numero_factura": numero_factura,
                     "proveedor_id": proveedor_id,
                     "proveedor_nombre": proveedor_nombre,
                     "proveedor_apellido": proveedor_apellido,
@@ -1095,22 +1080,34 @@ def nueva_compra():
             )
 
         total_compra = quantize_money(sum((l["total"] for l in lineas), Decimal("0")))
+        total_unidades = sum((l["cantidad"] for l in lineas), Decimal("0"))
 
         try:
-            db.start_transaction()
+            cur2 = db.cursor(dictionary=True)
+            cur2.execute(
+                "SELECT disponible FROM almacenes WHERE id=%s FOR UPDATE",
+                (almacen_id,)
+            )
+            almacen = cur2.fetchone()
+            if not almacen:
+                raise ValueError("Almacen no encontrado")
+            disponible = to_decimal(almacen.get("disponible")) or Decimal("0")
+            if disponible - total_unidades < 0:
+                raise ValueError("No hay espacio disponible suficiente en el almacen seleccionado")
+
             cur2 = db.cursor()
             articulo_ids_creados = {}
             for linea in lineas:
                 if linea["articulo_id"] is None:
-                    if linea["codigo"] in articulo_ids_creados:
-                        linea["articulo_id"] = articulo_ids_creados[linea["codigo"]]
+                    if linea["nombre"] in articulo_ids_creados:
+                        linea["articulo_id"] = articulo_ids_creados[linea["nombre"]]
                     else:
                         cur2.execute(
-                            "INSERT INTO articulos (codigo, nombre) VALUES (%s, %s)",
-                            (linea["codigo"], linea["nombre"])
+                            "INSERT INTO articulos (nombre) VALUES (%s)",
+                            (linea["nombre"],)
                         )
                         linea["articulo_id"] = cur2.lastrowid
-                        articulo_ids_creados[linea["codigo"]] = linea["articulo_id"]
+                        articulo_ids_creados[linea["nombre"]] = linea["articulo_id"]
                 elif linea["actualizar_nombre"]:
                     cur2.execute(
                         "UPDATE articulos SET nombre=%s WHERE id=%s",
@@ -1138,10 +1135,10 @@ def nueva_compra():
 
             cur2.execute(
                 """
-                INSERT INTO compras (numero_factura, proveedor_id, fecha, almacen_id, total)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO compras (proveedor_id, fecha, almacen_id, total)
+                VALUES (%s, %s, %s, %s)
                 """,
-                (numero_factura, proveedor_id, fecha, almacen_id, total_compra)
+                (proveedor_id, fecha, almacen_id, total_compra)
             )
             compra_id = cur2.lastrowid
 
@@ -1173,6 +1170,11 @@ def nueva_compra():
                     (almacen_id, linea["articulo_id"], linea["cantidad"])
                 )
 
+            cur2.execute(
+                "UPDATE almacenes SET disponible = disponible - %s WHERE id=%s",
+                (total_unidades, almacen_id)
+            )
+
             db.commit()
             db.close()
             flash("Factura de compra guardada", "success")
@@ -1187,7 +1189,6 @@ def nueva_compra():
                 almacenes=almacenes,
                 lineas=lineas,
                 cabecera={
-                    "numero_factura": numero_factura,
                     "proveedor_id": proveedor_id,
                     "proveedor_nombre": proveedor_nombre,
                     "proveedor_apellido": proveedor_apellido,
@@ -1236,7 +1237,7 @@ def compra_detalle(id):
 
     cursor.execute(
         """
-         SELECT cl.linea_num, a.codigo, a.nombre, cl.cantidad, cl.precio_compra,
+         SELECT cl.linea_num, a.nombre, cl.cantidad, cl.precio_compra,
              cl.iva_pct, cl.descuento_pct, cl.total_linea
         FROM compras_lineas cl
         JOIN articulos a ON cl.articulo_id = a.id
@@ -1274,8 +1275,8 @@ def eliminar_compra(id):
     lineas = cursor.fetchall()
 
     try:
-        db.start_transaction()
         cur2 = db.cursor()
+        total_unidades = sum((to_decimal(l['cantidad']) or Decimal("0") for l in lineas), Decimal("0"))
         for linea in lineas:
             cur2.execute(
                 """
@@ -1285,6 +1286,11 @@ def eliminar_compra(id):
                 """,
                 (compra['almacen_id'], linea['articulo_id'], -linea['cantidad'])
             )
+
+        cur2.execute(
+            "UPDATE almacenes SET disponible = disponible + %s WHERE id=%s",
+            (total_unidades, compra['almacen_id'])
+        )
 
         cur2.execute("DELETE FROM compras WHERE id=%s", (id,))
         db.commit()

@@ -24,7 +24,6 @@
     <form class="search-form compras-filters" method="GET">
         <input class="search-input" type="text" name="proveedor" placeholder="Proveedor" value="{{ proveedor }}">
         <input class="search-input" type="date" name="fecha" value="{{ fecha }}">
-        <input class="search-input" type="text" name="factura" placeholder="Nº factura" value="{{ factura }}">
         <button class="btn btn-secondary" type="submit">Filtrar</button>
         <a class="btn btn-secondary" href="/compras">Limpiar</a>
     </form>
@@ -34,7 +33,6 @@
 <table id="compras-table" border="1">
 <tr>
     <th>ID</th>
-    <th>Nº factura</th>
     <th>Proveedor</th>
     <th>Fecha</th>
     <th>Almacén</th>
@@ -44,7 +42,6 @@
 {% for c in compras %}
 <tr>
     <td>{{ c.id }}</td>
-    <td>{{ c.numero_factura }}</td>
     <td>{{ c.proveedor }}</td>
     <td>{{ c.fecha }}</td>
     <td>{{ c.almacen }}</td>
@@ -60,13 +57,13 @@
     <a class="btn btn-secondary" href="/">Volver</a>
     <div class="pagination-controls">
         {% if page > 1 %}
-            <a class="btn btn-secondary" href="?page={{ page-1 }}&proveedor={{ proveedor }}&fecha={{ fecha }}&factura={{ factura }}">Anterior</a>
+            <a class="btn btn-secondary" href="?page={{ page-1 }}&proveedor={{ proveedor }}&fecha={{ fecha }}">Anterior</a>
         {% else %}
             <span class="btn btn-secondary disabled">Anterior</span>
         {% endif %}
         <span>Pagina {{ page }} / {{ pages }}</span>
         {% if page < pages %}
-            <a class="btn btn-primary" href="?page={{ page+1 }}&proveedor={{ proveedor }}&fecha={{ fecha }}&factura={{ factura }}">Siguiente</a>
+            <a class="btn btn-primary" href="?page={{ page+1 }}&proveedor={{ proveedor }}&fecha={{ fecha }}">Siguiente</a>
         {% else %}
             <span class="btn btn-primary disabled">Siguiente</span>
         {% endif %}

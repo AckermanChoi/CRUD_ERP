@@ -54,7 +54,6 @@
     <table class="line-table" border="1">
         <tr>
             <th>Linea</th>
-            <th>Codigo articulo</th>
             <th>Nombre articulo</th>
             <th>Cantidad</th>
             <th>Precio unitario</th>
@@ -65,7 +64,6 @@
         {% for l in lineas %}
         <tr>
             <td>{{ l.linea_num }}</td>
-            <td>{{ l.codigo }}</td>
             <td>{{ l.nombre }}</td>
             <td>{{ l.cantidad }}</td>
             <td>{{ l.precio_compra }}</td>
