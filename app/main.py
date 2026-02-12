@@ -341,6 +341,31 @@ def buscar_clientes():
     db.close()
     return jsonify(data)
 
+
+@app.route("/almacenes/<int:almacen_id>/articulos/buscar")
+@login_required
+def buscar_articulos_almacen(almacen_id):
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify([])
+    like = f"%{q}%"
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT a.id, a.nombre, e.cantidad
+        FROM existencias e
+        JOIN articulos a ON a.id = e.articulo_id
+        WHERE e.almacen_id = %s AND e.cantidad > 0 AND a.nombre LIKE %s
+        ORDER BY a.nombre
+        LIMIT 10
+        """,
+        (almacen_id, like)
+    )
+    data = cursor.fetchall()
+    db.close()
+    return jsonify(data)
+
 # ---------------- EMPLEADOS ----------------
 @app.route("/empleados")
 @login_required
@@ -712,12 +737,24 @@ def nueva_venta():
             if nombre in articulos_cache:
                 articulo = articulos_cache[nombre]
             else:
-                cursor.execute("SELECT id, nombre FROM articulos WHERE nombre=%s", (nombre,))
+                cursor.execute(
+                    """
+                    SELECT a.id, a.nombre
+                    FROM existencias e
+                    JOIN articulos a ON a.id = e.articulo_id
+                    WHERE e.almacen_id = %s AND a.nombre = %s
+                    """,
+                    (almacen_id, nombre)
+                )
                 articulo = cursor.fetchone()
                 articulos_cache[nombre] = articulo
 
-            articulo_id = articulo['id'] if articulo else None
-            nombre_final = articulo['nombre'] if articulo else nombre
+            if not articulo:
+                errors.append(f"Linea {i + 1}: el articulo no existe en el almacen seleccionado")
+                continue
+
+            articulo_id = articulo['id']
+            nombre_final = articulo['nombre']
 
             base = cantidad * precio
             total_con_iva = base * (Decimal("1") + (iva_pct / Decimal("100")))
@@ -730,8 +767,7 @@ def nueva_venta():
                 "iva_pct": iva_pct,
                 "descuento_pct": descuento_pct,
                 "total": quantize_money(total_linea),
-                "articulo_id": articulo_id,
-                "actualizar_nombre": bool(articulo and nombre and nombre != articulo['nombre'])
+                "articulo_id": articulo_id
             })
 
         if not lineas:
@@ -775,23 +811,6 @@ def nueva_venta():
                 raise ValueError("Almacen no encontrado")
 
             cur2 = db.cursor()
-            articulo_ids_creados = {}
-            for linea in lineas:
-                if linea["articulo_id"] is None:
-                    if linea["nombre"] in articulo_ids_creados:
-                        linea["articulo_id"] = articulo_ids_creados[linea["nombre"]]
-                    else:
-                        cur2.execute(
-                            "INSERT INTO articulos (nombre) VALUES (%s)",
-                            (linea["nombre"],)
-                        )
-                        linea["articulo_id"] = cur2.lastrowid
-                        articulo_ids_creados[linea["nombre"]] = linea["articulo_id"]
-                elif linea["actualizar_nombre"]:
-                    cur2.execute(
-                        "UPDATE articulos SET nombre=%s WHERE id=%s",
-                        (linea["nombre"], linea["articulo_id"])
-                    )
 
             required = {}
             for linea in lineas:

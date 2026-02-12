@@ -161,7 +161,9 @@ INSERT INTO articulos (nombre) VALUES
 
 INSERT INTO compras (proveedor_id, fecha, almacen_id, total) VALUES
 (1, '2026-02-01', 1, 532.40),
-(2, '2026-02-05', 2, 343.83);
+(2, '2026-02-05', 2, 343.83),
+(1, '2026-02-10', 1, 173.64),
+(2, '2026-02-11', 2, 237.82);
 
 INSERT INTO compras_lineas (compra_id, linea_num, articulo_id, cantidad, precio_compra, iva_pct, descuento_pct, total_linea) VALUES
 (1, 1, 1, 10, 12.50, 21.00, 0.00, 151.25),
@@ -169,13 +171,26 @@ INSERT INTO compras_lineas (compra_id, linea_num, articulo_id, cantidad, precio_
 (1, 3, 3, 5, 25.00, 21.00, 0.00, 151.25),
 (2, 1, 1, 6, 12.50, 10.00, 0.00, 82.50),
 (2, 2, 2, 10, 10.00, 10.00, 0.00, 110.00),
-(2, 3, 3, 5, 29.00, 10.00, 5.00, 151.33);
+(2, 3, 3, 5, 29.00, 10.00, 5.00, 151.33),
+(3, 1, 1, 8, 12.00, 21.00, 0.00, 116.16),
+(3, 2, 2, 5, 9.50, 21.00, 0.00, 57.48),
+(4, 1, 3, 7, 26.00, 10.00, 0.00, 200.20),
+(4, 2, 2, 4, 9.00, 10.00, 5.00, 37.62);
+
+INSERT INTO ventas (fecha, total, cliente_id, almacen_id) VALUES
+('2026-02-08', 207.29, 1, 1),
+('2026-02-09', 176.00, 2, 2);
+
+INSERT INTO ventas_lineas (venta_id, linea_num, articulo_id, cantidad, precio_venta, iva_pct, descuento_pct, total_linea) VALUES
+(1, 1, 1, 6, 20.00, 21.00, 0.00, 145.20),
+(1, 2, 2, 3, 18.00, 21.00, 5.00, 62.09),
+(2, 1, 3, 4, 40.00, 10.00, 0.00, 176.00);
 
 INSERT INTO existencias (almacen_id, articulo_id, cantidad) VALUES
-(1, 1, 10),
-(1, 2, 20),
+(1, 1, 12),
+(1, 2, 22),
 (1, 3, 5),
 (2, 1, 6),
-(2, 2, 10),
-(2, 3, 5);
+(2, 2, 14),
+(2, 3, 8);
 
