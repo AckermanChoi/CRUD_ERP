@@ -13,6 +13,12 @@ body {
     padding: 20px;
 }
 
+body.compras-page {
+    background: #dbeaf3;
+    color: #0b2545;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
 /* ---------- HEADER ---------- */
 header {
     display: flex;
@@ -146,6 +152,112 @@ form input[type="submit"]:hover {
     gap: 12px;
     margin-bottom: 16px;
 }
+.compras-shell {
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    align-items: stretch;
+}
+.compras-header h1 {
+    color: #0b2545;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+.compras-form {
+    background: #e5f1f7;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(10, 35, 66, 0.1);
+    max-width: none;
+}
+.compras-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 10px;
+}
+.compras-actions {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 14px;
+    align-items: end;
+    margin: 8px 0 12px;
+}
+.compras-actions-centered {
+    grid-template-columns: 1fr;
+    justify-items: center;
+}
+.compras-actions .btn {
+    justify-self: start;
+    background: #0d2b5c;
+}
+.compras-actions .btn:hover {
+    background: #0a2148;
+}
+.search-field {
+    position: relative;
+}
+.search-inline {
+    width: 100%;
+    max-width: 520px;
+}
+.search-inline label {
+    color: #0b2545;
+    font-weight: 600;
+}
+.search-inline input {
+    border-radius: 10px;
+    padding-left: 36px;
+    background-image: radial-gradient(circle at 18px 50%, #0d2b5c 2px, transparent 3px),
+        linear-gradient(to right, transparent 0, transparent 14px, #0d2b5c 14px, #0d2b5c 16px, transparent 16px);
+    background-repeat: no-repeat;
+}
+.search-inline input:focus {
+    border-color: #2f80ed;
+    box-shadow: 0 0 0 2px rgba(47, 128, 237, 0.15);
+}
+.compras-form input[type="text"],
+.compras-form input[type="email"],
+.compras-form input[type="number"],
+.compras-form input[type="date"],
+.compras-form select {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #b8d0e0;
+}
+.section-title {
+    font-weight: 700;
+    color: #0b2545;
+    margin: 8px 0 6px;
+}
+.line-table {
+    box-shadow: none;
+    border: 2px solid #2f80ed;
+    border-radius: 10px;
+}
+.line-table th {
+    background: #2f80ed;
+}
+.form-actions-wide {
+    justify-content: flex-end;
+    gap: 12px;
+}
+.form-actions-wide .btn-secondary {
+    background: #cfe0ea;
+    color: #0b2545;
+}
+.form-actions-wide .btn-primary {
+    background: #0d2b5c;
+}
+.form-actions-wide .btn-primary:hover {
+    background: #0a2148;
+}
+.provider-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 10px 0 16px;
+}
 .invoice-grid .field label {
     font-weight: 600;
     margin-bottom: 6px;
@@ -178,6 +290,28 @@ form input[type="submit"]:hover {
     border: 1px solid #ddd;
     border-radius: 6px;
     background: #f7f7f7;
+}
+.search-results {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    z-index: 20;
+}
+.search-result-item {
+    padding: 8px 10px;
+    cursor: pointer;
+}
+.search-result-item:hover {
+    background: #f2f2f2;
+}
+.field {
+    position: relative;
 }
 .compras-filters {
     display: flex;

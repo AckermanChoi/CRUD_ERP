@@ -93,6 +93,8 @@ CREATE TABLE compras_lineas (
     articulo_id INT NOT NULL,
     cantidad DECIMAL(12,2) NOT NULL,
     precio_compra DECIMAL(12,2) NOT NULL,
+    iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
+    descuento_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
     total_linea DECIMAL(12,2) NOT NULL,
     FOREIGN KEY (compra_id) REFERENCES compras(id) ON DELETE CASCADE,
     FOREIGN KEY (articulo_id) REFERENCES articulos(id)
@@ -126,8 +128,8 @@ INSERT INTO clientes (nombre, dni, correo, telefono, pais, tipo) VALUES
 ('Carlos Ruiz', '87654321B', 'carlos@example.com', '600333444', 'Espana', 'Particular');
 
 INSERT INTO proveedores (nombre, dni, correo, contacto, tipo_suministro) VALUES
-('Proveedor Norte', 'B12345678', 'norte@example.com', 'Laura Perez', 'Electronica'),
-('Suministros Centro', 'B87654321', 'centro@example.com', 'Miguel Gomez', 'Mecanica');
+('Proveedor Norte', 'B12345678', 'norte@example.com', '600111999', 'Electronica'),
+('Suministros Centro', 'B87654321', 'centro@example.com', '600222888', 'Mecanica');
 
 INSERT INTO vehiculos (modelo, tipo, anio, color, precio_venta, costo_fabricante) VALUES
 ('Corolla', 'Sedan', 2024, 'Blanco', 22000.00, 16000.00),
@@ -143,16 +145,16 @@ INSERT INTO articulos (codigo, nombre) VALUES
 ('A-300', 'Bateria 12V');
 
 INSERT INTO compras (numero_factura, proveedor_id, fecha, almacen_id, total) VALUES
-('FAC-1001', 1, '2026-02-01', 1, 450.00),
-('FAC-1002', 2, '2026-02-05', 2, 320.00);
+('FAC-1001', 1, '2026-02-01', 1, 532.40),
+('FAC-1002', 2, '2026-02-05', 2, 343.83);
 
-INSERT INTO compras_lineas (compra_id, linea_num, articulo_id, cantidad, precio_compra, total_linea) VALUES
-(1, 1, 1, 10, 12.50, 125.00),
-(1, 2, 2, 20, 10.00, 200.00),
-(1, 3, 3, 5, 25.00, 125.00),
-(2, 1, 1, 6, 12.50, 75.00),
-(2, 2, 2, 10, 10.00, 100.00),
-(2, 3, 3, 5, 29.00, 145.00);
+INSERT INTO compras_lineas (compra_id, linea_num, articulo_id, cantidad, precio_compra, iva_pct, descuento_pct, total_linea) VALUES
+(1, 1, 1, 10, 12.50, 21.00, 0.00, 151.25),
+(1, 2, 2, 20, 10.00, 21.00, 5.00, 229.90),
+(1, 3, 3, 5, 25.00, 21.00, 0.00, 151.25),
+(2, 1, 1, 6, 12.50, 10.00, 0.00, 82.50),
+(2, 2, 2, 10, 10.00, 10.00, 0.00, 110.00),
+(2, 3, 3, 5, 29.00, 10.00, 5.00, 151.33);
 
 INSERT INTO existencias (almacen_id, articulo_id, cantidad) VALUES
 (1, 1, 10),

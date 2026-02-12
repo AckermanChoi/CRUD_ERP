@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, g, url_for, flash
+from flask import Flask, render_template, request, redirect, session, g, url_for, flash, jsonify
 from app.db import get_db
 import os
 from functools import wraps
@@ -875,6 +875,30 @@ def eliminar_proveedor(id):
     return redirect("/proveedores")
 
 
+@app.route("/proveedores/buscar")
+@login_required
+def buscar_proveedores():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify([])
+    like = f"%{q}%"
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT id, nombre, dni, correo, contacto, tipo_suministro
+        FROM proveedores
+        WHERE nombre LIKE %s OR dni LIKE %s
+        ORDER BY nombre
+        LIMIT 10
+        """,
+        (like, like)
+    )
+    data = cursor.fetchall()
+    db.close()
+    return jsonify(data)
+
+
 # ---------------- COMPRAS ----------------
 @app.route("/compras")
 @login_required
@@ -952,7 +976,13 @@ def nueva_compra():
     lineas = []
     if request.method == "POST":
         numero_factura = request.form.get("numero_factura", "").strip()
-        proveedor_id = request.form.get("proveedor")
+        proveedor_id = request.form.get("proveedor_id")
+        proveedor_nombre = request.form.get("proveedor_nombre", "").strip()
+        proveedor_apellido = request.form.get("proveedor_apellido", "").strip()
+        proveedor_dni = request.form.get("proveedor_dni", "").strip()
+        proveedor_correo = request.form.get("proveedor_correo", "").strip()
+        proveedor_contacto = request.form.get("proveedor_contacto", "").strip()
+        proveedor_tipo = request.form.get("proveedor_tipo", "").strip()
         fecha = request.form.get("fecha", "").strip()
         almacen_id = request.form.get("almacen")
 
@@ -960,12 +990,18 @@ def nueva_compra():
         nombres = request.form.getlist("linea_nombre")
         cantidades = request.form.getlist("linea_cantidad")
         precios = request.form.getlist("linea_precio")
+        ivas = request.form.getlist("linea_iva")
+        descuentos = request.form.getlist("linea_descuento")
 
-        max_len = max(len(codigos), len(nombres), len(cantidades), len(precios))
+        max_len = max(len(codigos), len(nombres), len(cantidades), len(precios), len(ivas), len(descuentos))
         errors = []
 
-        if not numero_factura or not proveedor_id or not fecha or not almacen_id:
+        if not numero_factura or not fecha or not almacen_id:
             errors.append("Completa todos los datos de la cabecera")
+
+        if not proveedor_id:
+            if not proveedor_nombre or not proveedor_dni:
+                errors.append("Indica un proveedor existente o completa los datos del nuevo proveedor")
 
         articulos_cache = {}
         for i in range(max_len):
@@ -973,6 +1009,8 @@ def nueva_compra():
             nombre = (nombres[i] if i < len(nombres) else "").strip()
             cantidad_raw = (cantidades[i] if i < len(cantidades) else "").strip()
             precio_raw = (precios[i] if i < len(precios) else "").strip()
+            iva_raw = (ivas[i] if i < len(ivas) else "").strip()
+            descuento_raw = (descuentos[i] if i < len(descuentos) else "").strip()
 
             if not any([codigo, nombre, cantidad_raw, precio_raw]):
                 continue
@@ -983,11 +1021,19 @@ def nueva_compra():
 
             cantidad = to_decimal(cantidad_raw)
             precio = to_decimal(precio_raw)
+            iva_pct = to_decimal(iva_raw) if iva_raw else Decimal("0")
+            descuento_pct = to_decimal(descuento_raw) if descuento_raw else Decimal("0")
             if cantidad is None or cantidad <= 0:
                 errors.append(f"Linea {i + 1}: cantidad invalida")
                 continue
             if precio is None or precio < 0:
                 errors.append(f"Linea {i + 1}: precio invalido")
+                continue
+            if iva_pct is None or iva_pct < 0:
+                errors.append(f"Linea {i + 1}: IVA invalido")
+                continue
+            if descuento_pct is None or descuento_pct < 0:
+                errors.append(f"Linea {i + 1}: descuento invalido")
                 continue
 
             if codigo in articulos_cache:
@@ -1004,12 +1050,18 @@ def nueva_compra():
                 errors.append(f"Linea {i + 1}: falta el nombre del articulo")
                 continue
 
+            base = cantidad * precio
+            total_con_iva = base * (Decimal("1") + (iva_pct / Decimal("100")))
+            total_linea = total_con_iva * (Decimal("1") - (descuento_pct / Decimal("100")))
+
             lineas.append({
                 "codigo": codigo,
                 "nombre": nombre_final or nombre,
                 "cantidad": cantidad,
                 "precio": precio,
-                "total": quantize_money(cantidad * precio),
+                "iva_pct": iva_pct,
+                "descuento_pct": descuento_pct,
+                "total": quantize_money(total_linea),
                 "articulo_id": articulo_id,
                 "actualizar_nombre": bool(articulo and nombre and nombre != articulo['nombre'])
             })
@@ -1031,6 +1083,12 @@ def nueva_compra():
                 cabecera={
                     "numero_factura": numero_factura,
                     "proveedor_id": proveedor_id,
+                    "proveedor_nombre": proveedor_nombre,
+                    "proveedor_apellido": proveedor_apellido,
+                    "proveedor_dni": proveedor_dni,
+                    "proveedor_correo": proveedor_correo,
+                    "proveedor_contacto": proveedor_contacto,
+                    "proveedor_tipo": proveedor_tipo,
                     "fecha": fecha,
                     "almacen_id": almacen_id
                 }
@@ -1059,6 +1117,25 @@ def nueva_compra():
                         (linea["nombre"], linea["articulo_id"])
                     )
 
+            if not proveedor_id:
+                proveedor_full = proveedor_nombre
+                if proveedor_apellido:
+                    proveedor_full = f"{proveedor_nombre} {proveedor_apellido}".strip()
+                cur2.execute(
+                    """
+                    INSERT INTO proveedores (nombre, dni, correo, contacto, tipo_suministro)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (
+                        proveedor_full,
+                        proveedor_dni,
+                        proveedor_correo or None,
+                        proveedor_contacto or None,
+                        proveedor_tipo or None
+                    )
+                )
+                proveedor_id = cur2.lastrowid
+
             cur2.execute(
                 """
                 INSERT INTO compras (numero_factura, proveedor_id, fecha, almacen_id, total)
@@ -1072,8 +1149,8 @@ def nueva_compra():
                 cur2.execute(
                     """
                     INSERT INTO compras_lineas
-                    (compra_id, linea_num, articulo_id, cantidad, precio_compra, total_linea)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    (compra_id, linea_num, articulo_id, cantidad, precio_compra, iva_pct, descuento_pct, total_linea)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         compra_id,
@@ -1081,6 +1158,8 @@ def nueva_compra():
                         linea["articulo_id"],
                         linea["cantidad"],
                         linea["precio"],
+                        linea["iva_pct"],
+                        linea["descuento_pct"],
                         linea["total"]
                     )
                 )
@@ -1110,6 +1189,12 @@ def nueva_compra():
                 cabecera={
                     "numero_factura": numero_factura,
                     "proveedor_id": proveedor_id,
+                    "proveedor_nombre": proveedor_nombre,
+                    "proveedor_apellido": proveedor_apellido,
+                    "proveedor_dni": proveedor_dni,
+                    "proveedor_correo": proveedor_correo,
+                    "proveedor_contacto": proveedor_contacto,
+                    "proveedor_tipo": proveedor_tipo,
                     "fecha": fecha,
                     "almacen_id": almacen_id
                 }
@@ -1151,7 +1236,8 @@ def compra_detalle(id):
 
     cursor.execute(
         """
-        SELECT cl.linea_num, a.codigo, a.nombre, cl.cantidad, cl.precio_compra, cl.total_linea
+         SELECT cl.linea_num, a.codigo, a.nombre, cl.cantidad, cl.precio_compra,
+             cl.iva_pct, cl.descuento_pct, cl.total_linea
         FROM compras_lineas cl
         JOIN articulos a ON cl.articulo_id = a.id
         WHERE cl.compra_id = %s
