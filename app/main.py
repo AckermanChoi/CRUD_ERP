@@ -1574,7 +1574,7 @@ def compra_detalle(id):
     cursor = db.cursor(dictionary=True)
     cursor.execute(
         """
-        SELECT c.id, c.numero_factura, c.fecha, c.total,
+        SELECT c.id, c.fecha, c.total,
                p.id AS proveedor_id, p.nombre AS proveedor,
                a.id AS almacen_id, a.ubicacion AS almacen
         FROM compras c
