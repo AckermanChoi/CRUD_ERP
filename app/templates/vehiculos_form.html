@@ -1,43 +1,53 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
+{% extends "base.html" %}
+
+{% block title %}{% if vehiculo %}Editar Vehículo{% else %}Nuevo Vehículo{% endif %} - ERP Toyota{% endblock %}
+{% block page_title %}{% if vehiculo %}Editar Vehículo{% else %}Nuevo Vehículo{% endif %}{% endblock %}
+
+{% block content %}
+{% include "_form_styles.html" %}
+<div class="form-card">
+    <div class="form-card-header">
+        <h2>🚗 {% if vehiculo %}Editar Vehículo{% else %}Nuevo Vehículo{% endif %}</h2>
     </div>
-    <div class="page-title">Vehículos</div>
-</header>
-{% include '_flash.html' %}
-<div class="container">
-<div class="table-actions">
-    <a class="btn btn-secondary" href="/">Volver</a>
-    <div></div>
-</div>
-<div class="form-wrapper">
-    <h1>{{ vehiculo and "Editar Vehículo" or "Nuevo Vehículo" }}</h1>
-    <form method="POST">
-        Modelo: <input type="text" name="modelo" value="{{ vehiculo.modelo if vehiculo else '' }}"><br>
-        Tipo: <input type="text" name="tipo" value="{{ vehiculo.tipo if vehiculo else '' }}"><br>
-        Año: <input type="number" name="anio" value="{{ vehiculo.anio if vehiculo else '' }}"><br>
-        Color: <input type="text" name="color" value="{{ vehiculo.color if vehiculo else '' }}"><br>
-        Precio de venta: <input type="number" name="precio" step="0.01" value="{{ vehiculo.precio_venta if vehiculo else '' }}"><br>
-        Costo fabricante: <input type="number" name="costo" step="0.01" value="{{ vehiculo.costo_fabricante if vehiculo else '' }}"><br>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-            <input class="btn btn-primary" type="submit" value="{{ vehiculo and 'Actualizar' or 'Guardar' }}">
+    
+    <form method="POST" class="form-content">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="modelo">Modelo *</label>
+                <input type="text" id="modelo" name="modelo" value="{{ vehiculo.modelo if vehiculo else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="tipo">Tipo *</label>
+                <input type="text" id="tipo" name="tipo" value="{{ vehiculo.tipo if vehiculo else '' }}" required>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="anio">Año *</label>
+                <input type="number" id="anio" name="anio" value="{{ vehiculo.anio if vehiculo else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="color">Color *</label>
+                <input type="text" id="color" name="color" value="{{ vehiculo.color if vehiculo else '' }}" required>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="precio">Precio de Venta *</label>
+                <input type="number" id="precio" name="precio" step="0.01" value="{{ vehiculo.precio_venta if vehiculo else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="costo">Costo Fabricante *</label>
+                <input type="number" id="costo" name="costo" step="0.01" value="{{ vehiculo.costo_fabricante if vehiculo else '' }}" required>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <a href="/vehiculos" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">{{ vehiculo and 'Actualizar' or 'Guardar' }}</button>
         </div>
     </form>
 </div>
-</div>
-</body>
-</html>
+{% endblock %}

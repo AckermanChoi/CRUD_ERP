@@ -1,43 +1,116 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
+{% extends "base.html" %}
+
+{% block title %}{% if cliente %}Editar Cliente{% else %}Nuevo Cliente{% endif %} - ERP Toyota{% endblock %}
+{% block page_title %}{% if cliente %}Editar Cliente{% else %}Nuevo Cliente{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <div class="form-card-header">
+        <h2>👥 {% if cliente %}Editar Cliente{% else %}Nuevo Cliente{% endif %}</h2>
     </div>
-    <div class="page-title">Clientes</div>
-</header>
-{% include '_flash.html' %}
-<div class="container">
-<div class="table-actions">
-    <a class="btn btn-secondary" href="/">Volver</a>
-    <div></div>
-</div>
-<div class="form-wrapper">
-    <h1>{{ cliente and "Editar Cliente" or "Nuevo Cliente" }}</h1>
-    <form method="POST">
-        Nombre: <input type="text" name="nombre" value="{{ cliente.nombre if cliente else '' }}"><br>
-        DNI: <input type="text" name="dni" value="{{ cliente.dni if cliente else '' }}"><br>
-        Correo: <input type="email" name="correo" value="{{ cliente.correo if cliente else '' }}"><br>
-        Teléfono: <input type="text" name="telefono" value="{{ cliente.telefono if cliente else '' }}"><br>
-        País: <input type="text" name="pais" value="{{ cliente.pais if cliente else '' }}"><br>
-        Tipo: <input type="text" name="tipo" value="{{ cliente.tipo if cliente else '' }}"><br>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-            <input class="btn btn-primary" type="submit" value="{{ cliente and 'Actualizar' or 'Guardar' }}">
+    
+    <form method="POST" class="form-content">
+        <div class="form-group">
+            <label for="nombre">Nombre *</label>
+            <input type="text" id="nombre" name="nombre" value="{{ cliente.nombre if cliente else '' }}" required>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="dni">DNI *</label>
+                <input type="text" id="dni" name="dni" value="{{ cliente.dni if cliente else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="tipo">Tipo *</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Particular" {% if cliente and cliente.tipo == 'Particular' %}selected{% endif %}>Particular</option>
+                    <option value="empresa" {% if cliente and cliente.tipo == 'empresa' %}selected{% endif %}>Empresa</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="correo">Correo *</label>
+                <input type="email" id="correo" name="correo" value="{{ cliente.correo if cliente else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="telefono">Teléfono *</label>
+                <input type="text" id="telefono" name="telefono" value="{{ cliente.telefono if cliente else '' }}" required>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="pais">País *</label>
+            <input type="text" id="pais" name="pais" value="{{ cliente.pais if cliente else '' }}" required>
+        </div>
+        
+        <div class="form-actions">
+            <a href="/clientes" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">{{ cliente and 'Actualizar' or 'Guardar' }}</button>
         </div>
     </form>
 </div>
-</div>
-</body>
-</html>
+
+<style>
+.form-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    max-width: 600px;
+    margin: 0 auto;
+}
+.form-card-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.form-card-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #0d2b5c;
+}
+.form-content {
+    padding: 30px;
+}
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #0d2b5c;
+    margin-bottom: 8px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #2f80ed;
+    box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.1);
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+</style>
+{% endblock %}

@@ -1,78 +1,71 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
-    </div>
-    <div class="page-title">Detalle venta</div>
-</header>
-{% include '_flash.html' %}
-<div class="container">
-<div class="table-actions">
-    <a class="btn btn-secondary" href="/ventas">Volver</a>
-    <a class="btn btn-secondary" href="/ventas/eliminar/{{ venta.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
-</div>
+{% extends "base.html" %}
 
-<div class="invoice-card">
-    <h1>Factura de venta #{{ venta.id }}</h1>
+{% block title %}Detalle de Venta - ERP Toyota{% endblock %}
+{% block page_title %}Detalle de Venta #{{ venta.id }}{% endblock %}
+
+{% block content %}
+<div class="table-card" style="margin-bottom: 20px;">
+    <div class="table-card-header">
+        <h2 class="table-card-title">💵 Factura de Venta #{{ venta.id }}</h2>
+        <div class="table-actions">
+            <a href="/ventas" class="btn btn-sm btn-secondary">← Volver</a>
+            <a href="/ventas/eliminar/{{ venta.id }}" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que quieres eliminar esta venta?')">Eliminar</a>
+        </div>
+    </div>
+    
     <div class="invoice-grid">
         <div class="field">
-            <label>ID cliente</label>
-            <div class="readonly-field">{{ venta.cliente_id }}</div>
+            <label>ID Cliente</label>
+            <div class="readonly-field"><strong>{{ venta.cliente_id }}</strong></div>
         </div>
         <div class="field">
-            <label>Nombre cliente</label>
-            <div class="readonly-field">{{ venta.cliente }}</div>
+            <label>Cliente</label>
+            <div class="readonly-field"><strong>{{ venta.cliente }}</strong></div>
         </div>
         <div class="field">
             <label>Fecha</label>
             <div class="readonly-field">{{ venta.fecha }}</div>
         </div>
         <div class="field">
-            <label>Almacen salida</label>
+            <label>Almacén de Salida</label>
             <div class="readonly-field">{{ venta.almacen }}</div>
         </div>
         <div class="field">
             <label>Total</label>
-            <div class="readonly-field">{{ venta.total }}</div>
+            <div class="readonly-field" style="font-size: 18px; color: #2f80ed;"><strong>$ {{ "%.2f"|format(venta.total) }}</strong></div>
         </div>
     </div>
+</div>
 
-    <table class="line-table" border="1">
-        <tr>
-            <th>Linea</th>
-            <th>Nombre articulo</th>
-            <th>Cantidad</th>
-            <th>Precio unitario</th>
-            <th>IVA %</th>
-            <th>Descuento %</th>
-            <th>Total linea</th>
-        </tr>
-        {% for l in lineas %}
-        <tr>
-            <td>{{ l.linea_num }}</td>
-            <td>{{ l.nombre }}</td>
-            <td>{{ l.cantidad }}</td>
-            <td>{{ l.precio_venta }}</td>
-            <td>{{ l.iva_pct }}</td>
-            <td>{{ l.descuento_pct }}</td>
-            <td>{{ l.total_linea }}</td>
-        </tr>
-        {% endfor %}
+<div class="table-card">
+    <div class="table-card-header">
+        <h2 class="table-card-title">📋 Líneas de Venta</h2>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Línea</th>
+                <th>Nombre Artículo</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>IVA %</th>
+                <th>Descuento %</th>
+                <th>Total Línea</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in lineas %}
+            <tr>
+                <td><strong>{{ l.linea_num }}</strong></td>
+                <td>{{ l.nombre }}</td>
+                <td>{{ l.cantidad }}</td>
+                <td>$ {{ "%.2f"|format(l.precio_venta) }}</td>
+                <td>{{ l.iva_pct }}%</td>
+                <td>{{ l.descuento_pct }}%</td>
+                <td><strong>$ {{ "%.2f"|format(l.total_linea) }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 </div>
-</div>
-</body>
-</html>
+{% endblock %}

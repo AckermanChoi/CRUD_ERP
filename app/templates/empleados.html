@@ -1,76 +1,74 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
-    </div>
-    <div class="page-title">Empleados</div>
-</header>
-{% include '_flash.html' %}
-<div class="container">
-<div class="table-actions">
-    <div></div>
-    <a class="btn btn-primary add-btn" href="/empleados/nuevo" data-can-add="{{ '1' if has_permission('add') else '0' }}">Añadir</a>
-</div>
-<div class="table-wrapper">
-<table id="empleados-table" border="1">
-<tr>
-    <th>ID</th>
-    <th>Nombre</th>
-    <th>DNI</th>
-    <th>Correo</th>
-    <th>Dirección</th>
-    <th>Departamento</th>
-    <th>Rol</th>
-    <th>Salario</th>
-    <th>Acciones</th>
-</tr>
-{% for e in empleados %}
-<tr>
-    <td>{{ e.id }}</td>
-    <td>{{ e.nombre }}</td>
-    <td>{{ e.dni }}</td>
-    <td>{{ e.correo }}</td>
-    <td>{{ e.direccion }}</td>
-    <td>{{ e.departamento }}</td>
-    <td>{{ e.role }}</td>
-    <td>{{ e.salario }}</td>
-    <td>
-        <a href="/empleados/editar/{{ e.id }}">Editar</a> | 
-        <a href="/empleados/eliminar/{{ e.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
-    </td>
-</tr>
-{% endfor %}
-</table>
-<div class="bottom-bar">
-    <a class="btn btn-secondary" href="/">Volver</a>
-    <div class="pagination-controls">
-        {% if page > 1 %}
-            <a class="btn btn-secondary" href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>
-        {% else %}
-            <span class="btn btn-secondary disabled">Anterior</span>
-        {% endif %}
-        <span>Pagina {{ page }} / {{ pages }}</span>
-        {% if page < pages %}
-            <a class="btn btn-primary" href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>
-        {% else %}
-            <span class="btn btn-primary disabled">Siguiente</span>
-        {% endif %}
-    </div>
-</div>
+{% extends "base.html" %}
+
+{% block title %}Empleados - ERP Toyota{% endblock %}
+{% block page_title %}Empleados{% endblock %}
+
+{% block content %}
+<div class="search-bar">
+    <input type="text" class="search-input" placeholder="Buscar empleados..." id="searchInput">
 </div>
 
-</body>
-</html>
+<div class="table-card">
+    <div class="table-card-header">
+        <h2 class="table-card-title">👨‍💼 Lista de Empleados</h2>
+        <div class="table-actions">
+            <a href="/empleados/nuevo" class="btn btn-sm btn-primary" data-can-add="{{ '1' if has_permission('add') else '0' }}">+ Nuevo Empleado</a>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>Correo</th>
+                <th>Dirección</th>
+                <th>Departamento</th>
+                <th>Rol</th>
+                <th>Salario</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in empleados %}
+            <tr>
+                <td><strong>#{{ e.id }}</strong></td>
+                <td>{{ e.nombre }}</td>
+                <td>{{ e.dni }}</td>
+                <td>{{ e.correo }}</td>
+                <td>{{ e.direccion }}</td>
+                <td>{{ e.departamento }}</td>
+                <td>{{ e.role }}</td>
+                <td>$ {{ "%.2f"|format(e.salario) }}</td>
+                <td>
+                    <div class="btn-group">
+                        <a href="/empleados/editar/{{ e.id }}" class="btn btn-sm btn-secondary">Editar</a>
+                        <a href="/empleados/eliminar/{{ e.id }}" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que quieres eliminar este empleado?')">Eliminar</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="?page=1{% if q %}&q={{ q }}{% endif %}">Primera</a>
+        <a href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>
+    {% endif %}
+    
+    {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+        <span class="active">{{ p }}</span>
+        {% else %}
+        <a href="?page={{ p }}{% if q %}&q={{ q }}{% endif %}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+    
+    {% if page < pages %}
+        <a href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>
+        <a href="?page={{ pages }}{% if q %}&q={{ q }}{% endif %}">Última</a>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,38 +1,225 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ERP Toyota{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Clientes</span>
+                <span class="stat-icon">👥</span>
+            </div>
+            <div class="stat-value">{{ total_clientes }}</div>
+            <div class="stat-subtitle">Total registrados</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Vehículos</span>
+                <span class="stat-icon">🚗</span>
+            </div>
+            <div class="stat-value">{{ total_vehiculos }}</div>
+            <div class="stat-subtitle">En catálogo</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Ventas Totales</span>
+                <span class="stat-icon">💰</span>
+            </div>
+            <div class="stat-value">$ {{ "%.2f"|format(total_ventas) }}</div>
+            <div class="stat-subtitle">Acumulado</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Empleados</span>
+                <span class="stat-icon">👨‍💼</span>
+            </div>
+            <div class="stat-value">{{ total_empleados }}</div>
+            <div class="stat-subtitle">Personal activo</div>
+        </div>
     </div>
-    <div class="page-title">Inicio</div>
-</header>
 
-{% include '_flash.html' %}
+    <!-- Charts Row -->
+    <div class="charts-grid">
+        <!-- Ventas Chart -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h3>📊 Últimas Ventas</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="ventasChart"></canvas>
+            </div>
+        </div>
 
-<div class="container">
-<ul>
-    <li><a href="/clientes">Clientes</a></li>
-    <li><a href="/empleados">Empleados</a></li>
-    <li><a href="/vehiculos">Vehículos</a></li>
-    <li><a href="/ventas">Ventas</a></li>
-    <li><a href="/compras">Compras</a></li>
-    <li><a href="/proveedores">Proveedores</a></li>
-    <li><a href="/almacenes">Almacenes</a></li>
-</ul>
+        <!-- Empleados por Departamento -->
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h3>👥 Empleados por Departamento</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="departmentChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="charts-grid">
+        <!-- Últimas Ventas -->
+        <div class="table-card">
+            <div class="table-card-header">
+                <h2 class="table-card-title">💵 Últimas Ventas</h2>
+                <a href="/ventas" class="btn btn-sm btn-primary">Ver todas</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ultimas_ventas %}
+                    <tr>
+                        <td><strong>#{{ venta.id }}</strong></td>
+                        <td>{{ venta.fecha }}</td>
+                        <td>{{ venta.cliente }}</td>
+                        <td><strong>$ {{ "%.2f"|format(venta.total) }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Stock por Almacén -->
+        <div class="table-card">
+            <div class="table-card-header">
+                <h2 class="table-card-title">📦 Stock por Almacén</h2>
+                <a href="/almacenes" class="btn btn-sm btn-primary">Ver todos</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Almacén</th>
+                        <th>Cantidad Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if almacenes_stock %}
+                        {% for almacen in almacenes_stock %}
+                        <tr>
+                            <td><strong>{{ almacen.ubicacion }}</strong></td>
+                            <td>{{ almacen.cantidad_total or 0 }} unidades</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">Sin datos disponibles</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-</body>
-</html>
+<script>
+    // Gráfico de Ventas (Últimas 5)
+    const ventasData = {
+        labels: [
+            {% for venta in ultimas_ventas %}
+            'Venta #{{ venta.id }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Monto de Venta ($)',
+            data: [
+                {% for venta in ultimas_ventas %}
+                {{ venta.total }},
+                {% endfor %}
+            ],
+            borderColor: '#2f80ed',
+            backgroundColor: 'rgba(47, 128, 237, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#2f80ed',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4
+        }]
+    };
+
+    const ventasChart = new Chart(document.getElementById('ventasChart'), {
+        type: 'line',
+        data: ventasData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Empleados por Departamento (Donut)
+    const deptData = {
+        labels: [
+            {% for dept in empleados_dept %}
+            '{{ dept.departamento }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for dept in empleados_dept %}
+                {{ dept.cantidad }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#2f80ed',
+                '#0d2b5c',
+                '#1a5fdd',
+                '#4a9aff',
+                '#6bb0ff',
+                '#8bc5ff'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    };
+
+    const deptChart = new Chart(document.getElementById('departmentChart'), {
+        type: 'doughnut',
+        data: deptData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
 

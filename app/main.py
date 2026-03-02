@@ -15,7 +15,60 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 # ---------------- INDEX ----------------
 @app.route("/")
 def index():
-    return render_template("index.html")
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    # Estadísticas generales
+    cursor.execute("SELECT COUNT(*) as total FROM clientes")
+    total_clientes = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM vehiculos")
+    total_vehiculos = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM empleados")
+    total_empleados = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT SUM(total) as total FROM ventas")
+    total_ventas_result = cursor.fetchone()['total']
+    total_ventas = float(total_ventas_result) if total_ventas_result else 0
+    
+    # Últimas 5 ventas
+    cursor.execute("""
+        SELECT v.id, v.fecha, v.total, c.nombre as cliente
+        FROM ventas v
+        JOIN clientes c ON v.cliente_id = c.id
+        ORDER BY v.id DESC
+        LIMIT 5
+    """)
+    ultimas_ventas = cursor.fetchall()
+    
+    # Empleados por departamento
+    cursor.execute("""
+        SELECT departamento, COUNT(*) as cantidad
+        FROM empleados
+        GROUP BY departamento
+    """)
+    empleados_dept = cursor.fetchall()
+    
+    # Stock total por almacén
+    cursor.execute("""
+        SELECT a.ubicacion, SUM(e.cantidad) as cantidad_total
+        FROM almacenes a
+        LEFT JOIN existencias e ON a.id = e.almacen_id
+        GROUP BY a.id, a.ubicacion
+    """)
+    almacenes_stock = cursor.fetchall()
+    
+    db.close()
+    
+    return render_template("index.html", 
+                         total_clientes=total_clientes,
+                         total_vehiculos=total_vehiculos,
+                         total_empleados=total_empleados,
+                         total_ventas=total_ventas,
+                         ultimas_ventas=ultimas_ventas,
+                         empleados_dept=empleados_dept,
+                         almacenes_stock=almacenes_stock)
 
 # ---------------- AUTH ----------------
 def login_required(f):
@@ -1053,6 +1106,51 @@ def almacenes():
     pages = max(1, (total + per_page - 1) // per_page)
     db.close()
     return render_template("almacenes.html", almacenes=data, page=page, per_page=per_page, total=total, pages=pages, q=q)
+
+@app.route("/almacenes/<int:id>/detalle")
+@login_required
+def detalle_almacen(id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    # Obtener información del almacén
+    cursor.execute("SELECT * FROM almacenes WHERE id=%s", (id,))
+    almacen = cursor.fetchone()
+    
+    if not almacen:
+        db.close()
+        flash("Almacén no encontrado", "error")
+        return redirect("/almacenes")
+    
+    # Obtener artículos/existencias en el almacén
+    cursor.execute("""
+        SELECT 
+            e.articulo_id,
+            a.nombre,
+            e.cantidad
+        FROM existencias e
+        JOIN articulos a ON e.articulo_id = a.id
+        WHERE e.almacen_id = %s
+        ORDER BY a.nombre
+    """, (id,))
+    articulos = cursor.fetchall()
+    
+    # Calcular cantidad total de artículos
+    cantidad_total = sum(float(art['cantidad']) for art in articulos) if articulos else 0
+    
+    # Calcular porcentaje de ocupación
+    capacidad = float(almacen['capacidad']) if almacen['capacidad'] else 1
+    porcentaje_ocupado = (cantidad_total / capacidad * 100) if capacidad > 0 else 0
+    porcentaje_disponible = 100 - porcentaje_ocupado
+    
+    db.close()
+    
+    return render_template("almacenes_detalle.html", 
+                         almacen=almacen, 
+                         articulos=articulos,
+                         cantidad_total=cantidad_total,
+                         porcentaje_ocupado=porcentaje_ocupado,
+                         porcentaje_disponible=porcentaje_disponible)
 
 @app.route("/almacenes/nuevo", methods=["GET", "POST"])
 @login_required

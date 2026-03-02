@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERP Toyota{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota">
+            <span>ERP Toyota</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <span class="icon">📊</span>
+                <span>Inicio</span>
+            </a>
+            <a href="/ventas" class="nav-item {% if '/ventas' in request.path %}active{% endif %}">
+                <span class="icon">💰</span>
+                <span>Ventas</span>
+            </a>
+            <a href="/compras" class="nav-item {% if '/compras' in request.path %}active{% endif %}">
+                <span class="icon">📦</span>
+                <span>Compras</span>
+            </a>
+            <a href="/almacenes" class="nav-item {% if '/almacenes' in request.path %}active{% endif %}">
+                <span class="icon">🏭</span>
+                <span>Almacenes</span>
+            </a>
+            <a href="/clientes" class="nav-item {% if '/clientes' in request.path %}active{% endif %}">
+                <span class="icon">👥</span>
+                <span>Clientes</span>
+            </a>
+            <a href="/proveedores" class="nav-item {% if '/proveedores' in request.path %}active{% endif %}">
+                <span class="icon">🤝</span>
+                <span>Proveedores</span>
+            </a>
+            <a href="/empleados" class="nav-item {% if '/empleados' in request.path %}active{% endif %}">
+                <span class="icon">👔</span>
+                <span>Empleados</span>
+            </a>
+            <a href="/vehiculos" class="nav-item {% if '/vehiculos' in request.path %}active{% endif %}">
+                <span class="icon">🚗</span>
+                <span>Vehículos</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header Top -->
+        <header class="top-header">
+            <div class="header-title">
+                <h1>{% block page_title %}Inicio{% endblock %}</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="user-avatar">{% if session.empleado_nombre %}{{ session.empleado_nombre[0] }}{% else %}U{% endif %}</span>
+                    <div class="user-details">
+                        {% if session.empleado_nombre %}
+                            <p class="user-name">{{ session.empleado_nombre }}</p>
+                            <a href="/logout" class="logout-link">Salir</a>
+                        {% else %}
+                            <a href="/login" class="login-link">Acceder</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        {% include '_flash.html' %}
+
+        <!-- Page Content -->
+        <div class="page-content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

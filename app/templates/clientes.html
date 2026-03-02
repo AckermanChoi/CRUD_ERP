@@ -1,74 +1,72 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
-    </div>
-    <div class="page-title">Clientes</div>
-</header>
-{% include '_flash.html' %}
-<div class="container">
-<div class="table-actions">
-    <div></div>
-    <a class="btn btn-primary add-btn" href="/clientes/nuevo" data-can-add="{{ '1' if has_permission('add') else '0' }}">Añadir</a>
-</div>
-<div class="table-wrapper">
-<table id="clientes-table" border="1">
-<tr>
-    <th>ID</th>
-    <th>Nombre</th>
-    <th>DNI</th>
-    <th>Correo</th>
-    <th>Teléfono</th>
-    <th>País</th>
-    <th>Tipo</th>
-    <th>Acciones</th>
-</tr>
-{% for c in clientes %}
-<tr>
-    <td>{{ c.id }}</td>
-    <td>{{ c.nombre }}</td>
-    <td>{{ c.dni }}</td>
-    <td>{{ c.correo }}</td>
-    <td>{{ c.telefono }}</td>
-    <td>{{ c.pais }}</td>
-    <td>{{ c.tipo }}</td>
-    <td>
-        <a href="/clientes/editar/{{ c.id }}">Editar</a> | 
-        <a href="/clientes/eliminar/{{ c.id }}" onclick="return confirm('¿Seguro que quieres eliminar este registro?');">Eliminar</a>
-    </td>
-</tr>
-{% endfor %}
-</table>
-<div class="bottom-bar">
-    <a class="btn btn-secondary" href="/">Volver</a>
-    <div class="pagination-controls">
-        {% if page > 1 %}
-            <a class="btn btn-secondary" href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>
-        {% else %}
-            <span class="btn btn-secondary disabled">Anterior</span>
-        {% endif %}
-        <span>Pagina {{ page }} / {{ pages }}</span>
-        {% if page < pages %}
-            <a class="btn btn-primary" href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>
-        {% else %}
-            <span class="btn btn-primary disabled">Siguiente</span>
-        {% endif %}
-    </div>
-</div>
+{% extends "base.html" %}
+
+{% block title %}Clientes - ERP Toyota{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+
+{% block content %}
+<div class="search-bar">
+    <input type="text" class="search-input" placeholder="Buscar clientes..." id="searchInput">
 </div>
 
-</body>
-</html>
+<div class="table-card">
+    <div class="table-card-header">
+        <h2 class="table-card-title">👥 Lista de Clientes</h2>
+        <div class="table-actions">
+            <a href="/clientes/nuevo" class="btn btn-sm btn-primary" data-can-add="{{ '1' if has_permission('add') else '0' }}">+ Nuevo Cliente</a>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>Correo</th>
+                <th>Teléfono</th>
+                <th>País</th>
+                <th>Tipo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in clientes %}
+            <tr>
+                <td><strong>#{{ c.id }}</strong></td>
+                <td>{{ c.nombre }}</td>
+                <td>{{ c.dni }}</td>
+                <td>{{ c.correo }}</td>
+                <td>{{ c.telefono }}</td>
+                <td>{{ c.pais }}</td>
+                <td>{{ c.tipo }}</td>
+                <td>
+                    <div class="btn-group">
+                        <a href="/clientes/editar/{{ c.id }}" class="btn btn-sm btn-secondary">Editar</a>
+                        <a href="/clientes/eliminar/{{ c.id }}" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que quieres eliminar este cliente?')">Eliminar</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="?page=1{% if q %}&q={{ q }}{% endif %}">Primera</a>
+        <a href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>
+    {% endif %}
+    
+    {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+        <span class="active">{{ p }}</span>
+        {% else %}
+        <a href="?page={{ p }}{% if q %}&q={{ q }}{% endif %}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+    
+    {% if page < pages %}
+        <a href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>
+        <a href="?page={{ pages }}{% if q %}&q={{ q }}{% endif %}">Última</a>
+    {% endif %}
+</div>
+{% endblock %}
