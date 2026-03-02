@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="search-bar">
-    <input type="text" class="search-input" placeholder="Buscar proveedores..." id="searchInput">
+    <input type="text" class="search-input" placeholder="Buscar proveedor por nombre, DNI, correo o tipo de suministro..." id="searchInput">
 </div>
 
 <div class="table-card">
@@ -68,4 +68,20 @@
         <a href="?page={{ pages }}{% if q %}&q={{ q }}{% endif %}">Última</a>
     {% endif %}
 </div>
-{% endblock %}
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('table tbody tr');
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>{% endblock %}
