@@ -125,9 +125,15 @@
             background-color: #f5f5f5;
         }
         
-        .articles-table td:last-child {
+        .articles-table td:nth-child(3) {
             text-align: right;
             font-weight: bold;
+        }
+
+        .articles-table td:last-child,
+        .articles-table th:last-child {
+            text-align: center;
+            font-weight: normal;
         }
         
         .no-articles {
@@ -266,6 +272,7 @@
                     <th>ID Artículo</th>
                     <th>Nombre del Artículo</th>
                     <th>Cantidad en Stock</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -274,6 +281,15 @@
                     <td>{{ articulo.articulo_id }}</td>
                     <td>{{ articulo.nombre }}</td>
                     <td>{{ "%.2f"|format(articulo.cantidad) }} unidades</td>
+                    <td>
+                        {% if has_permission('delete') %}
+                        <form method="POST" action="/almacenes/{{ almacen.id }}/articulos/{{ articulo.articulo_id }}/eliminar" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar este artículo del almacén?')">Eliminar</button>
+                        </form>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

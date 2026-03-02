@@ -1210,6 +1210,52 @@ def eliminar_almacen(id):
     return redirect("/almacenes")
 
 
+@app.route("/almacenes/<int:almacen_id>/articulos/<int:articulo_id>/eliminar", methods=["POST"])
+@login_required
+@role_required(action='delete')
+def eliminar_articulo_almacen(almacen_id, articulo_id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT e.cantidad, a.nombre
+        FROM existencias e
+        JOIN articulos a ON a.id = e.articulo_id
+        WHERE e.almacen_id = %s AND e.articulo_id = %s
+        FOR UPDATE
+        """,
+        (almacen_id, articulo_id)
+    )
+    row = cursor.fetchone()
+
+    if not row:
+        db.close()
+        flash("Artículo no encontrado en este almacén", "error")
+        return redirect(f"/almacenes/{almacen_id}/detalle")
+
+    cantidad = to_decimal(row["cantidad"]) or Decimal("0")
+
+    try:
+        cur2 = db.cursor()
+        cur2.execute(
+            "DELETE FROM existencias WHERE almacen_id=%s AND articulo_id=%s",
+            (almacen_id, articulo_id)
+        )
+        cur2.execute(
+            "UPDATE almacenes SET disponible = disponible + %s WHERE id=%s",
+            (cantidad, almacen_id)
+        )
+        db.commit()
+        db.close()
+        flash(f"Artículo '{row['nombre']}' eliminado del almacén", "success")
+        return redirect(f"/almacenes/{almacen_id}/detalle")
+    except Exception as e:
+        db.rollback()
+        db.close()
+        flash(f"Error al eliminar el artículo: {e}", "error")
+        return redirect(f"/almacenes/{almacen_id}/detalle")
+
+
 
 # ---------------- PROVEEDORES ----------------
 @app.route("/proveedores")
