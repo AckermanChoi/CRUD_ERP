@@ -183,6 +183,7 @@
                                 <th>Artículo</th>
                                 <th style="width: 120px; text-align: center;">Cantidad</th>
                                 <th>Almacenes de Origen</th>
+                                <th style="width: 100px; text-align: center;">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -201,8 +202,10 @@
                         almacenesHtml += '</ul>';
                     }
                     
+                    let accionHtml = '';
                     if (hasError) {
                         almacenesHtml += `<div class="almacen-error">❌ Falta: ${material.pendiente} unidades</div>`;
+                        accionHtml = `<a href="/compras/nuevo?articulo_id=${material.articulo_id}&cantidad=${material.pendiente}" class="btn btn-sm btn-warning" style="font-size: 12px; padding: 6px 8px;">Comprar</a>`;
                     }
                     
                     html += `
@@ -210,6 +213,7 @@
                             <td><strong>${material.articulo}</strong></td>
                             <td style="text-align: center;"><strong>${material.cantidad_total}</strong></td>
                             <td>${almacenesHtml}</td>
+                            <td style="text-align: center;">${accionHtml}</td>
                         </tr>
                     `;
                 });

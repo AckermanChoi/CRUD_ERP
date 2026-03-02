@@ -1731,7 +1731,29 @@ def nueva_compra():
             )
 
     db.close()
+    
+    # Precargar artículo desde parámetros de consulta (para fabricación)
     lineas = [{} for _ in range(3)]
+    articulo_id = request.args.get("articulo_id")
+    cantidad_str = request.args.get("cantidad", "")
+    
+    if articulo_id:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT id, nombre FROM articulos WHERE id=%s", (articulo_id,))
+        articulo = cursor.fetchone()
+        db.close()
+        
+        if articulo:
+            cantidad = to_int_quantity(cantidad_str) if cantidad_str else 1
+            lineas[0] = {
+                "nombre": articulo['nombre'],
+                "cantidad": cantidad,
+                "precio": "",
+                "iva_pct": "",
+                "descuento_pct": ""
+            }
+    
     return render_template(
         "compras_form.html",
         proveedores=proveedores,
@@ -2192,6 +2214,7 @@ def api_fabricacion_preview():
                 remaining -= take
             
             materials.append({
+                "articulo_id": articulo_id,
                 "articulo": articulo_nombre,
                 "cantidad_total": qty_required,
                 "almacenes": sources,
