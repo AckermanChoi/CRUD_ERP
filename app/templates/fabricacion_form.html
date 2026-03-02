@@ -5,6 +5,75 @@
 
 {% block content %}
 {% include "_form_styles.html" %}
+<style>
+    .preview-card {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        display: none;
+    }
+    .preview-card.visible {
+        display: block;
+    }
+    .preview-card h3 {
+        margin-top: 0;
+        color: #333;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    .material-item {
+        background: white;
+        border-left: 4px solid #2196F3;
+        padding: 12px;
+        margin-bottom: 12px;
+        border-radius: 4px;
+    }
+    .material-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 6px;
+    }
+    .material-qty {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+    .almacenes-list {
+        margin-left: 16px;
+        padding-top: 8px;
+        border-top: 1px solid #eee;
+    }
+    .almacen-source {
+        background: #e3f2fd;
+        border-left: 3px solid #1976d2;
+        padding: 8px 12px;
+        margin: 4px 0;
+        border-radius: 3px;
+        font-size: 13px;
+        color: #333;
+    }
+    .almacen-source strong {
+        color: #1976d2;
+    }
+    .error-material {
+        background: #ffebee;
+        border-left-color: #d32f2f;
+        color: #c62828;
+    }
+    .error-material .almacen-source {
+        background: #ffcccc;
+        border-left-color: #c62828;
+    }
+    .loading {
+        text-align: center;
+        color: #999;
+        padding: 20px;
+        font-style: italic;
+    }
+</style>
+
 <div class="form-card">
     <div class="form-card-header">
         <h2>🏗️ Nueva Orden de Fabricación</h2>
@@ -41,6 +110,12 @@
             </select>
         </div>
 
+        <!-- Preview de materiales -->
+        <div id="preview-container" class="preview-card">
+            <h3>📦 Materiales necesarios:</h3>
+            <div id="preview-content"></div>
+        </div>
+
         <div class="form-group">
             <label for="observaciones">Observaciones</label>
             <textarea id="observaciones" name="observaciones" rows="3">{{ cabecera.observaciones if cabecera else '' }}</textarea>
@@ -52,4 +127,89 @@
         </div>
     </form>
 </div>
+
+<script>
+    const vehiculoSelect = document.getElementById('vehiculo_id');
+    const cantidadInput = document.getElementById('cantidad');
+    const previewContainer = document.getElementById('preview-container');
+    const previewContent = document.getElementById('preview-content');
+
+    async function fetchPreview() {
+        const vehiculoId = vehiculoSelect.value;
+        const cantidad = cantidadInput.value;
+
+        if (!vehiculoId || !cantidad || cantidad === '0') {
+            previewContainer.classList.remove('visible');
+            return;
+        }
+
+        previewContent.innerHTML = '<div class="loading">Cargando materiales...</div>';
+        previewContainer.classList.add('visible');
+
+        try {
+            const response = await fetch('/api/fabricacion/preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    vehiculo_id: vehiculoId,
+                    cantidad: cantidad
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                previewContent.innerHTML = `<div style="color: #d32f2f; padding: 12px; background: #ffebee; border-radius: 4px;">⚠️ ${data.error || 'Error al cargar materiales'}</div>`;
+                return;
+            }
+
+            if (data.materiales && data.materiales.length > 0) {
+                let html = '';
+                data.materiales.forEach(material => {
+                    const hasError = material.pendiente > 0;
+                    const materialClass = hasError ? 'material-item error-material' : 'material-item';
+                    
+                    html += `
+                        <div class="${materialClass}">
+                            <div class="material-name">${material.articulo}</div>
+                            <div class="material-qty">Total necesario: <strong>${material.cantidad_total} unidades</strong></div>
+                    `;
+                    
+                    if (material.almacenes.length > 0) {
+                        html += '<div class="almacenes-list">';
+                        material.almacenes.forEach(source => {
+                            html += `
+                                <div class="almacen-source">
+                                    <strong>${source.almacen}:</strong> ${source.cantidad} unidades
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                    }
+                    
+                    if (hasError) {
+                        html += `<div style="color: #c62828; font-size: 13px; margin-top: 8px; font-weight: 600;">❌ Pendiente: ${material.pendiente} unidades (stock insuficiente)</div>`;
+                    }
+                    
+                    html += '</div>';
+                });
+                previewContent.innerHTML = html;
+            } else {
+                previewContent.innerHTML = '<div style="color: #999; padding: 12px;">No hay materiales requeridos</div>';
+            }
+        } catch (error) {
+            previewContent.innerHTML = `<div style="color: #d32f2f; padding: 12px; background: #ffebee; border-radius: 4px;">Error: ${error.message}</div>`;
+        }
+    }
+
+    vehiculoSelect.addEventListener('change', fetchPreview);
+    cantidadInput.addEventListener('input', fetchPreview);
+
+    // Cargar preview inicial si hay valores
+    if (vehiculoSelect.value && cantidadInput.value) {
+        fetchPreview();
+    }
+</script>
 {% endblock %}

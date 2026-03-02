@@ -2110,6 +2110,102 @@ def nueva_fabricacion():
     )
 
 
+@app.route("/api/fabricacion/preview", methods=["POST"])
+@login_required
+def api_fabricacion_preview():
+    """API para obtener preview de materiales necesarios para una orden de fabricación"""
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        vehiculo_id = request.json.get("vehiculo_id")
+        cantidad_raw = request.json.get("cantidad", "0")
+        
+        if not vehiculo_id:
+            return jsonify({"error": "Vehículo no especificado"}), 400
+        
+        cantidad = to_int_quantity(cantidad_raw)
+        if cantidad is None or cantidad <= 0:
+            return jsonify({"error": "Cantidad inválida"}), 400
+        
+        # Obtener BOM del vehículo
+        cursor.execute(
+            """
+            SELECT articulo_id, cantidad_por_unidad
+            FROM fabricacion_bom
+            WHERE vehiculo_id = %s
+            """,
+            (vehiculo_id,)
+        )
+        bom_rows = cursor.fetchall()
+        
+        if not bom_rows:
+            return jsonify({"error": "El vehículo no tiene BOM definido"}), 400
+        
+        # Calcular cantidades requeridas
+        required = {}
+        for row in bom_rows:
+            qpu = to_int_quantity(row['cantidad_por_unidad'])
+            if qpu is None or qpu <= 0:
+                return jsonify({"error": "BOM contiene cantidades inválidas"}), 400
+            req = qpu * cantidad
+            required[row['articulo_id']] = req
+        
+        # Mapear materiales con almacenes de origen disponibles
+        materials = []
+        for articulo_id, qty_required in required.items():
+            cursor.execute("SELECT nombre FROM articulos WHERE id=%s", (articulo_id,))
+            art = cursor.fetchone()
+            articulo_nombre = art['nombre'] if art else f"ID {articulo_id}"
+            
+            # Obtener stocks disponibles de este artículo
+            cursor.execute(
+                """
+                SELECT e.almacen_id, e.cantidad, a.ubicacion
+                FROM existencias e
+                JOIN almacenes a ON a.id = e.almacen_id
+                WHERE e.articulo_id = %s
+                  AND a.tipo_almacen <> 'Vehiculos'
+                  AND e.cantidad > 0
+                ORDER BY e.cantidad DESC
+                """,
+                (articulo_id,)
+            )
+            stocks = cursor.fetchall()
+            
+            # Distribuir cantidad requerida entre almacenes
+            remaining = qty_required
+            sources = []
+            for stock in stocks:
+                if remaining <= 0:
+                    break
+                available = to_int_quantity(stock['cantidad']) or 0
+                if available <= 0:
+                    continue
+                take = available if available <= remaining else remaining
+                if take <= 0:
+                    continue
+                sources.append({
+                    "almacen": stock['ubicacion'],
+                    "cantidad": take
+                })
+                remaining -= take
+            
+            materials.append({
+                "articulo": articulo_nombre,
+                "cantidad_total": qty_required,
+                "almacenes": sources,
+                "pendiente": remaining
+            })
+        
+        db.close()
+        return jsonify({"success": True, "materiales": materials})
+    
+    except Exception as e:
+        db.close()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/fabricacion/<int:id>")
 @login_required
 def fabricacion_detalle(id):
