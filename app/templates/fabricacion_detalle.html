@@ -23,7 +23,7 @@
         </div>
         <div class="field">
             <label>Cantidad Fabricada</label>
-            <div class="readonly-field"><strong>{{ orden.cantidad }}</strong></div>
+            <div class="readonly-field"><strong>{{ orden.cantidad|int }}</strong></div>
         </div>
         <div class="field">
             <label>Almacén Destino</label>
@@ -57,7 +57,7 @@
             <tr>
                 <td>{{ c.articulo }}</td>
                 <td>{{ c.almacen_origen }}</td>
-                <td><strong>{{ c.cantidad }}</strong></td>
+                <td><strong>{{ c.cantidad|int }}</strong></td>
             </tr>
             {% endfor %}
             {% if not consumos %}

@@ -108,7 +108,7 @@
                 <tr class="linea-row">
                     <td class="linea-num">{{ loop.index }}</td>
                     <td><input type="text" name="linea_nombre" list="articulos_datalist" value="{{ linea.nombre or '' }}"></td>
-                    <td><input type="number" step="0.01" min="0" name="linea_cantidad" value="{{ linea.cantidad or '' }}"></td>
+                    <td><input type="number" step="1" min="1" name="linea_cantidad" value="{{ linea.cantidad or '' }}"></td>
                     <td><input type="number" step="0.01" min="0" name="linea_precio" value="{{ linea.precio or '' }}"></td>
                     <td><input type="text" class="linea-subtotal readonly-input" value="" readonly></td>
                     <td><input type="number" step="0.01" min="0" name="linea_iva" value="{{ linea.iva_pct or '' }}"></td>
@@ -160,7 +160,7 @@
         row.innerHTML = "" +
             "<td class='linea-num'></td>" +
             "<td><input type='text' name='linea_nombre' list='articulos_datalist'></td>" +
-            "<td><input type='number' step='0.01' min='0' name='linea_cantidad'></td>" +
+            "<td><input type='number' step='1' min='1' name='linea_cantidad'></td>" +
             "<td><input type='number' step='0.01' min='0' name='linea_precio'></td>" +
             "<td><input type='text' class='linea-subtotal readonly-input' readonly></td>" +
             "<td><input type='number' step='0.01' min='0' name='linea_iva'></td>" +

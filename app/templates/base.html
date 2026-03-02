@@ -86,6 +86,88 @@
         </div>
     </main>
 
+    <div id="app-confirm-modal" class="app-confirm-modal" aria-hidden="true">
+        <div class="app-confirm-backdrop" data-confirm-close></div>
+        <dialog class="app-confirm-dialog" aria-labelledby="app-confirm-title">
+            <h3 id="app-confirm-title" class="app-confirm-title">Confirmar acción</h3>
+            <p id="app-confirm-message" class="app-confirm-message">¿Seguro que quieres continuar?</p>
+            <div class="app-confirm-actions">
+                <button type="button" id="app-confirm-cancel" class="btn btn-secondary">Cancelar</button>
+                <button type="button" id="app-confirm-accept" class="btn btn-danger">Eliminar</button>
+            </div>
+        </dialog>
+    </div>
+
+    <script>
+        (function () {
+            const modal = document.getElementById('app-confirm-modal');
+            const dialogEl = modal ? modal.querySelector('.app-confirm-dialog') : null;
+            const messageEl = document.getElementById('app-confirm-message');
+            const acceptBtn = document.getElementById('app-confirm-accept');
+            const cancelBtn = document.getElementById('app-confirm-cancel');
+            if (!modal || !dialogEl || !messageEl || !acceptBtn || !cancelBtn) return;
+
+            let pendingAction = null;
+
+            function openModal(message, onAccept) {
+                messageEl.textContent = message || '¿Seguro que quieres continuar?';
+                pendingAction = onAccept;
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                dialogEl.setAttribute('open', 'open');
+                acceptBtn.focus();
+            }
+
+            function closeModal() {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                dialogEl.removeAttribute('open');
+                pendingAction = null;
+            }
+
+            document.addEventListener('click', function (event) {
+                const trigger = event.target.closest('[data-confirm]');
+                if (!trigger) return;
+
+                event.preventDefault();
+                const message = trigger.dataset.confirm || '¿Seguro que quieres continuar?';
+
+                if (trigger.tagName === 'A' && trigger.href) {
+                    openModal(message, function () {
+                        globalThis.location.href = trigger.href;
+                    });
+                    return;
+                }
+
+                const form = trigger.form || trigger.closest('form');
+                if (form) {
+                    openModal(message, function () {
+                        form.submit();
+                    });
+                }
+            });
+
+            modal.addEventListener('click', function (event) {
+                if (event.target.closest('[data-confirm-close]')) {
+                    closeModal();
+                }
+            });
+
+            cancelBtn.addEventListener('click', closeModal);
+            acceptBtn.addEventListener('click', function () {
+                const action = pendingAction;
+                closeModal();
+                if (action) action();
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                    closeModal();
+                }
+            });
+        })();
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

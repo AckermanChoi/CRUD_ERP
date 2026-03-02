@@ -91,7 +91,7 @@ CREATE TABLE compras_lineas (
     compra_id INT NOT NULL,
     linea_num INT NOT NULL,
     articulo_id INT NOT NULL,
-    cantidad DECIMAL(12,2) NOT NULL,
+    cantidad INT NOT NULL,
     precio_compra DECIMAL(12,2) NOT NULL,
     iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
     descuento_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
@@ -106,7 +106,7 @@ CREATE TABLE ventas_lineas (
     venta_id INT NOT NULL,
     linea_num INT NOT NULL,
     articulo_id INT NOT NULL,
-    cantidad DECIMAL(12,2) NOT NULL,
+    cantidad INT NOT NULL,
     precio_venta DECIMAL(12,2) NOT NULL,
     iva_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
     descuento_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
@@ -119,7 +119,7 @@ CREATE TABLE ventas_lineas (
 CREATE TABLE existencias (
     almacen_id INT NOT NULL,
     articulo_id INT NOT NULL,
-    cantidad DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cantidad INT NOT NULL DEFAULT 0,
     PRIMARY KEY (almacen_id, articulo_id),
     FOREIGN KEY (almacen_id) REFERENCES almacenes(id),
     FOREIGN KEY (articulo_id) REFERENCES articulos(id)
@@ -130,7 +130,7 @@ CREATE TABLE fabricacion_bom (
     id INT AUTO_INCREMENT PRIMARY KEY,
     vehiculo_id INT NOT NULL,
     articulo_id INT NOT NULL,
-    cantidad_por_unidad DECIMAL(12,2) NOT NULL,
+    cantidad_por_unidad INT NOT NULL,
     UNIQUE KEY uq_bom_vehiculo_articulo (vehiculo_id, articulo_id),
     FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id),
     FOREIGN KEY (articulo_id) REFERENCES articulos(id)
@@ -141,7 +141,7 @@ CREATE TABLE fabricacion_ordenes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     vehiculo_id INT NOT NULL,
-    cantidad DECIMAL(12,2) NOT NULL,
+    cantidad INT NOT NULL,
     almacen_destino_id INT NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'borrador', -- borrador | confirmada | cancelada
     observaciones VARCHAR(255),
@@ -155,7 +155,7 @@ CREATE TABLE fabricacion_consumos (
     orden_id INT NOT NULL,
     articulo_id INT NOT NULL,
     almacen_origen_id INT NOT NULL,
-    cantidad DECIMAL(12,2) NOT NULL,
+    cantidad INT NOT NULL,
     FOREIGN KEY (orden_id) REFERENCES fabricacion_ordenes(id) ON DELETE CASCADE,
     FOREIGN KEY (articulo_id) REFERENCES articulos(id),
     FOREIGN KEY (almacen_origen_id) REFERENCES almacenes(id)
@@ -165,7 +165,7 @@ CREATE TABLE fabricacion_consumos (
 CREATE TABLE stock_vehiculos (
     almacen_id INT NOT NULL,
     vehiculo_id INT NOT NULL,
-    cantidad DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cantidad INT NOT NULL DEFAULT 0,
     PRIMARY KEY (almacen_id, vehiculo_id),
     FOREIGN KEY (almacen_id) REFERENCES almacenes(id),
     FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id)

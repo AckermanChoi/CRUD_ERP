@@ -9,7 +9,7 @@
         <h2 class="table-card-title">💵 Factura de Venta #{{ venta.id }}</h2>
         <div class="table-actions">
             <a href="/ventas" class="btn btn-sm btn-secondary">← Volver</a>
-            <a href="/ventas/eliminar/{{ venta.id }}" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que quieres eliminar esta venta?')">Eliminar</a>
+            <a href="/ventas/eliminar/{{ venta.id }}" class="btn btn-sm btn-danger" data-confirm="¿Seguro que quieres eliminar esta venta?">Eliminar</a>
         </div>
     </div>
     
@@ -58,7 +58,7 @@
             <tr>
                 <td><strong>{{ l.linea_num }}</strong></td>
                 <td>{{ l.nombre }}</td>
-                <td>{{ l.cantidad }}</td>
+                <td>{{ l.cantidad|int }}</td>
                 <td>$ {{ "%.2f"|format(l.precio_venta) }}</td>
                 <td>{{ l.iva_pct }}%</td>
                 <td>{{ l.descuento_pct }}%</td>

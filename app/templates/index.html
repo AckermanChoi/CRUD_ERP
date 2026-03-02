@@ -115,7 +115,7 @@
                         {% for almacen in almacenes_stock %}
                         <tr>
                             <td><strong>{{ almacen.ubicacion }}</strong></td>
-                            <td>{{ almacen.cantidad_total or 0 }} unidades</td>
+                            <td>{{ (almacen.cantidad_total or 0)|int }} unidades</td>
                         </tr>
                         {% endfor %}
                     {% else %}

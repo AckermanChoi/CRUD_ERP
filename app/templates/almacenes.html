@@ -43,7 +43,7 @@
                         <a href="/almacenes/editar/{{ a.id }}" class="btn btn-sm btn-secondary">Editar</a>
                         {% endif %}
                         {% if has_permission('delete') %}
-                        <a href="/almacenes/eliminar/{{ a.id }}" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que quieres eliminar este almacén?')">Eliminar</a>
+                        <a href="/almacenes/eliminar/{{ a.id }}" class="btn btn-sm btn-danger" data-confirm="¿Seguro que quieres eliminar este almacén?">Eliminar</a>
                         {% endif %}
                     </div>
                 </td>

@@ -120,6 +120,14 @@ def to_decimal(value):
     except (InvalidOperation, TypeError):
         return None
 
+def to_int_quantity(value):
+    dec = to_decimal(value)
+    if dec is None:
+        return None
+    if dec != dec.to_integral_value():
+        return None
+    return int(dec)
+
 def quantize_money(value):
     return value.quantize(MONEY_PLACES, rounding=ROUND_HALF_UP)
 
@@ -770,12 +778,12 @@ def nueva_venta():
                 errors.append(f"Linea {i + 1}: falta el nombre del articulo")
                 continue
 
-            cantidad = to_decimal(cantidad_raw)
+            cantidad = to_int_quantity(cantidad_raw)
             precio = to_decimal(precio_raw)
             iva_pct = to_decimal(iva_raw) if iva_raw else Decimal("0")
             descuento_pct = to_decimal(descuento_raw) if descuento_raw else Decimal("0")
             if cantidad is None or cantidad <= 0:
-                errors.append(f"Linea {i + 1}: cantidad invalida")
+                errors.append(f"Linea {i + 1}: cantidad invalida (solo enteros)")
                 continue
             if precio is None or precio < 0:
                 errors.append(f"Linea {i + 1}: precio invalido")
@@ -809,7 +817,7 @@ def nueva_venta():
             articulo_id = articulo['id']
             nombre_final = articulo['nombre']
 
-            base = cantidad * precio
+            base = Decimal(cantidad) * precio
             total_con_iva = base * (Decimal("1") + (iva_pct / Decimal("100")))
             total_linea = total_con_iva * (Decimal("1") - (descuento_pct / Decimal("100")))
 
@@ -851,7 +859,7 @@ def nueva_venta():
             )
 
         total_venta = quantize_money(sum((l["total"] for l in lineas), Decimal("0")))
-        total_unidades = sum((l["cantidad"] for l in lineas), Decimal("0"))
+        total_unidades = sum((l["cantidad"] for l in lineas), 0)
 
         try:
             cur2 = db.cursor(dictionary=True)
@@ -867,7 +875,7 @@ def nueva_venta():
 
             required = {}
             for linea in lineas:
-                required[linea["articulo_id"]] = required.get(linea["articulo_id"], Decimal("0")) + linea["cantidad"]
+                required[linea["articulo_id"]] = required.get(linea["articulo_id"], 0) + linea["cantidad"]
 
             placeholders = ", ".join(["%s"] * len(required))
             cur3 = db.cursor(dictionary=True)
@@ -881,10 +889,10 @@ def nueva_venta():
                 (almacen_id, *required.keys())
             )
             stock_rows = cur3.fetchall()
-            stock_map = {row["articulo_id"]: (to_decimal(row["cantidad"]) or Decimal("0")) for row in stock_rows}
+            stock_map = {row["articulo_id"]: (to_int_quantity(row["cantidad"]) or 0) for row in stock_rows}
 
             for articulo_id, qty in required.items():
-                disponible = stock_map.get(articulo_id, Decimal("0"))
+                disponible = stock_map.get(articulo_id, 0)
                 if disponible < qty:
                     nombre_articulo = next((l["nombre"] for l in lineas if l["articulo_id"] == articulo_id), f"ID {articulo_id}")
                     raise ValueError(f"Stock insuficiente para el articulo {nombre_articulo}")
@@ -1055,15 +1063,16 @@ def eliminar_venta(id):
 
     try:
         cur2 = db.cursor()
-        total_unidades = sum((to_decimal(l['cantidad']) or Decimal("0") for l in lineas), Decimal("0"))
+        total_unidades = sum((to_int_quantity(l['cantidad']) or 0 for l in lineas), 0)
         for linea in lineas:
+            cantidad_linea = to_int_quantity(linea['cantidad']) or 0
             cur2.execute(
                 """
                 INSERT INTO existencias (almacen_id, articulo_id, cantidad)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
                 """,
-                (venta['almacen_id'], linea['articulo_id'], linea['cantidad'])
+                (venta['almacen_id'], linea['articulo_id'], cantidad_linea)
             )
 
         cur2.execute(
@@ -1134,12 +1143,30 @@ def detalle_almacen(id):
         ORDER BY a.nombre
     """, (id,))
     articulos = cursor.fetchall()
+
+    # Obtener vehículos terminados en el almacén (si existen)
+    cursor.execute(
+        """
+        SELECT
+            sv.vehiculo_id,
+            v.modelo,
+            sv.cantidad
+        FROM stock_vehiculos sv
+        JOIN vehiculos v ON sv.vehiculo_id = v.id
+        WHERE sv.almacen_id = %s
+        ORDER BY v.modelo
+        """,
+        (id,)
+    )
+    vehiculos = cursor.fetchall()
     
-    # Calcular cantidad total de artículos
-    cantidad_total = sum(float(art['cantidad']) for art in articulos) if articulos else 0
+    # Calcular ocupación total (artículos + vehículos terminados)
+    cantidad_articulos = sum((to_int_quantity(art['cantidad']) or 0) for art in articulos) if articulos else 0
+    cantidad_vehiculos = sum((to_int_quantity(v['cantidad']) or 0) for v in vehiculos) if vehiculos else 0
+    cantidad_total = cantidad_articulos + cantidad_vehiculos
     
     # Calcular porcentaje de ocupación
-    capacidad = float(almacen['capacidad']) if almacen['capacidad'] else 1
+    capacidad = int(almacen['capacidad']) if almacen['capacidad'] else 1
     porcentaje_ocupado = (cantidad_total / capacidad * 100) if capacidad > 0 else 0
     porcentaje_disponible = 100 - porcentaje_ocupado
     
@@ -1148,6 +1175,9 @@ def detalle_almacen(id):
     return render_template("almacenes_detalle.html", 
                          almacen=almacen, 
                          articulos=articulos,
+                         vehiculos=vehiculos,
+                         cantidad_articulos=cantidad_articulos,
+                         cantidad_vehiculos=cantidad_vehiculos,
                          cantidad_total=cantidad_total,
                          porcentaje_ocupado=porcentaje_ocupado,
                          porcentaje_disponible=porcentaje_disponible)
@@ -1233,7 +1263,7 @@ def eliminar_articulo_almacen(almacen_id, articulo_id):
         flash("Artículo no encontrado en este almacén", "error")
         return redirect(f"/almacenes/{almacen_id}/detalle")
 
-    cantidad = to_decimal(row["cantidad"]) or Decimal("0")
+    cantidad = to_int_quantity(row["cantidad"]) or 0
 
     try:
         cur2 = db.cursor()
@@ -1509,12 +1539,12 @@ def nueva_compra():
                 errors.append(f"Linea {i + 1}: falta el nombre del articulo")
                 continue
 
-            cantidad = to_decimal(cantidad_raw)
+            cantidad = to_int_quantity(cantidad_raw)
             precio = to_decimal(precio_raw)
             iva_pct = to_decimal(iva_raw) if iva_raw else Decimal("0")
             descuento_pct = to_decimal(descuento_raw) if descuento_raw else Decimal("0")
             if cantidad is None or cantidad <= 0:
-                errors.append(f"Linea {i + 1}: cantidad invalida")
+                errors.append(f"Linea {i + 1}: cantidad invalida (solo enteros)")
                 continue
             if precio is None or precio < 0:
                 errors.append(f"Linea {i + 1}: precio invalido")
@@ -1536,7 +1566,7 @@ def nueva_compra():
             articulo_id = articulo['id'] if articulo else None
             nombre_final = articulo['nombre'] if articulo else nombre
 
-            base = cantidad * precio
+            base = Decimal(cantidad) * precio
             total_con_iva = base * (Decimal("1") + (iva_pct / Decimal("100")))
             total_linea = total_con_iva * (Decimal("1") - (descuento_pct / Decimal("100")))
 
@@ -1579,7 +1609,7 @@ def nueva_compra():
             )
 
         total_compra = quantize_money(sum((l["total"] for l in lineas), Decimal("0")))
-        total_unidades = sum((l["cantidad"] for l in lineas), Decimal("0"))
+        total_unidades = sum((l["cantidad"] for l in lineas), 0)
 
         try:
             cur2 = db.cursor(dictionary=True)
@@ -1590,7 +1620,7 @@ def nueva_compra():
             almacen = cur2.fetchone()
             if not almacen:
                 raise ValueError("Almacen no encontrado")
-            disponible = to_decimal(almacen.get("disponible")) or Decimal("0")
+            disponible = to_int_quantity(almacen.get("disponible")) or 0
             if disponible - total_unidades < 0:
                 raise ValueError("No hay espacio disponible suficiente en el almacen seleccionado")
 
@@ -1775,15 +1805,16 @@ def eliminar_compra(id):
 
     try:
         cur2 = db.cursor()
-        total_unidades = sum((to_decimal(l['cantidad']) or Decimal("0") for l in lineas), Decimal("0"))
+        total_unidades = sum((to_int_quantity(l['cantidad']) or 0 for l in lineas), 0)
         for linea in lineas:
+            cantidad_linea = to_int_quantity(linea['cantidad']) or 0
             cur2.execute(
                 """
                 INSERT INTO existencias (almacen_id, articulo_id, cantidad)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
                 """,
-                (compra['almacen_id'], linea['articulo_id'], -linea['cantidad'])
+                (compra['almacen_id'], linea['articulo_id'], -cantidad_linea)
             )
 
         cur2.execute(
@@ -1894,13 +1925,13 @@ def nueva_fabricacion():
         observaciones = request.form.get("observaciones", "").strip()
 
         errors = []
-        cantidad = to_decimal(cantidad_raw)
+        cantidad = to_int_quantity(cantidad_raw)
         if not vehiculo_id:
             errors.append("Selecciona un vehículo")
         if not almacen_destino_id:
             errors.append("Selecciona un almacén destino de vehículos")
         if cantidad is None or cantidad <= 0:
-            errors.append("La cantidad a fabricar debe ser mayor a 0")
+            errors.append("La cantidad a fabricar debe ser un entero mayor a 0")
 
         if errors:
             for err in errors:
@@ -1931,7 +1962,7 @@ def nueva_fabricacion():
             if almacen_destino['tipo_almacen'] != 'Vehiculos':
                 raise ValueError("El almacén destino debe ser de tipo 'Vehiculos'")
 
-            disponible_destino = to_decimal(almacen_destino.get('disponible')) or Decimal("0")
+            disponible_destino = to_int_quantity(almacen_destino.get('disponible')) or 0
             if disponible_destino < cantidad:
                 raise ValueError("No hay capacidad disponible suficiente en el almacén destino")
 
@@ -1949,8 +1980,10 @@ def nueva_fabricacion():
 
             required = {}
             for row in bom_rows:
-                qpu = to_decimal(row['cantidad_por_unidad']) or Decimal("0")
-                req = quantize_money(qpu * cantidad)
+                qpu = to_int_quantity(row['cantidad_por_unidad'])
+                if qpu is None or qpu <= 0:
+                    raise ValueError("La BOM contiene cantidades inválidas (deben ser enteras)")
+                req = qpu * cantidad
                 required[row['articulo_id']] = req
 
             allocations = []
@@ -1976,11 +2009,10 @@ def nueva_fabricacion():
                 for stock in stocks:
                     if remaining <= 0:
                         break
-                    available = to_decimal(stock['cantidad']) or Decimal("0")
+                    available = to_int_quantity(stock['cantidad']) or 0
                     if available <= 0:
                         continue
                     take = available if available <= remaining else remaining
-                    take = quantize_money(take)
                     if take <= 0:
                         continue
 
@@ -1991,9 +2023,9 @@ def nueva_fabricacion():
                     })
 
                     consumed_by_almacen[stock['almacen_id']] = (
-                        consumed_by_almacen.get(stock['almacen_id'], Decimal("0")) + take
+                        consumed_by_almacen.get(stock['almacen_id'], 0) + take
                     )
-                    remaining = quantize_money(remaining - take)
+                    remaining = remaining - take
 
                 if remaining > 0:
                     c_lock.execute("SELECT nombre FROM articulos WHERE id=%s", (articulo_id,))

@@ -224,11 +224,11 @@
             </div>
             <div class="stat-box">
                 <div class="label">Ocupado</div>
-                <div class="number">{{ "%.2f"|format(cantidad_total) }}</div>
+                <div class="number">{{ cantidad_total }}</div>
             </div>
             <div class="stat-box">
                 <div class="label">Disponible</div>
-                <div class="number">{{ "%.2f"|format(almacen.capacidad - cantidad_total) }}</div>
+                <div class="number">{{ almacen.capacidad - cantidad_total }}</div>
             </div>
         </div>
     </div>
@@ -245,7 +245,7 @@
                 </div>
             {% endif %}
         </div>
-        <div class="percentage">{{ "%.2f"|format(cantidad_total) }} de {{ almacen.capacidad }} unidades utilizadas</div>
+        <div class="percentage">{{ cantidad_total }} de {{ almacen.capacidad }} unidades utilizadas (Artículos: {{ cantidad_articulos }} | Vehículos: {{ cantidad_vehiculos }})</div>
     </div>
     
     <div class="progress-item">
@@ -257,8 +257,38 @@
                 </div>
             {% endif %}
         </div>
-        <div class="percentage">{{ "%.2f"|format(almacen.capacidad - cantidad_total) }} unidades disponibles</div>
+        <div class="percentage">{{ almacen.capacidad - cantidad_total }} unidades disponibles</div>
     </div>
+</div>
+
+<!-- Sección de Vehículos Terminados -->
+<div class="articles-section">
+    <h2>Vehículos Terminados en el Almacén</h2>
+
+    {% if vehiculos %}
+        <table class="articles-table" border="1">
+            <thead>
+                <tr>
+                    <th>ID Vehículo</th>
+                    <th>Modelo</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in vehiculos %}
+                <tr>
+                    <td>{{ v.vehiculo_id }}</td>
+                    <td>{{ v.modelo }}</td>
+                    <td>{{ v.cantidad|int }} unidades</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="no-articles">
+            <p>No hay vehículos terminados en este almacén</p>
+        </div>
+    {% endif %}
 </div>
 
 <!-- Sección de Artículos/Productos -->
@@ -280,11 +310,11 @@
                 <tr>
                     <td>{{ articulo.articulo_id }}</td>
                     <td>{{ articulo.nombre }}</td>
-                    <td>{{ "%.2f"|format(articulo.cantidad) }} unidades</td>
+                    <td>{{ articulo.cantidad|int }} unidades</td>
                     <td>
                         {% if has_permission('delete') %}
                         <form method="POST" action="/almacenes/{{ almacen.id }}/articulos/{{ articulo.articulo_id }}/eliminar" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar este artículo del almacén?')">Eliminar</button>
+                            <button type="submit" class="btn btn-sm btn-danger" data-confirm="¿Eliminar este artículo del almacén?">Eliminar</button>
                         </form>
                         {% else %}
                         -
@@ -300,6 +330,88 @@
         </div>
     {% endif %}
 </div>
+
+<div id="app-confirm-modal" class="app-confirm-modal" aria-hidden="true">
+    <div class="app-confirm-backdrop" data-confirm-close></div>
+    <dialog class="app-confirm-dialog" aria-labelledby="app-confirm-title">
+        <h3 id="app-confirm-title" class="app-confirm-title">Confirmar acción</h3>
+        <p id="app-confirm-message" class="app-confirm-message">¿Seguro que quieres continuar?</p>
+        <div class="app-confirm-actions">
+            <button type="button" id="app-confirm-cancel" class="btn btn-secondary">Cancelar</button>
+            <button type="button" id="app-confirm-accept" class="btn btn-danger">Eliminar</button>
+        </div>
+    </dialog>
+</div>
+
+<script>
+    (function () {
+        const modal = document.getElementById('app-confirm-modal');
+        const dialogEl = modal ? modal.querySelector('.app-confirm-dialog') : null;
+        const messageEl = document.getElementById('app-confirm-message');
+        const acceptBtn = document.getElementById('app-confirm-accept');
+        const cancelBtn = document.getElementById('app-confirm-cancel');
+        if (!modal || !dialogEl || !messageEl || !acceptBtn || !cancelBtn) return;
+
+        let pendingAction = null;
+
+        function openModal(message, onAccept) {
+            messageEl.textContent = message || '¿Seguro que quieres continuar?';
+            pendingAction = onAccept;
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            dialogEl.setAttribute('open', 'open');
+            acceptBtn.focus();
+        }
+
+        function closeModal() {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            dialogEl.removeAttribute('open');
+            pendingAction = null;
+        }
+
+        document.addEventListener('click', function (event) {
+            const trigger = event.target.closest('[data-confirm]');
+            if (!trigger) return;
+
+            event.preventDefault();
+            const message = trigger.dataset.confirm || '¿Seguro que quieres continuar?';
+
+            if (trigger.tagName === 'A' && trigger.href) {
+                openModal(message, function () {
+                    globalThis.location.href = trigger.href;
+                });
+                return;
+            }
+
+            const form = trigger.form || trigger.closest('form');
+            if (form) {
+                openModal(message, function () {
+                    form.submit();
+                });
+            }
+        });
+
+        modal.addEventListener('click', function (event) {
+            if (event.target.closest('[data-confirm-close]')) {
+                closeModal();
+            }
+        });
+
+        cancelBtn.addEventListener('click', closeModal);
+        acceptBtn.addEventListener('click', function () {
+            const action = pendingAction;
+            closeModal();
+            if (action) action();
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                closeModal();
+            }
+        });
+    })();
+</script>
 
 </div>
 </body>

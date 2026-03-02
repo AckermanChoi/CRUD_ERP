@@ -41,7 +41,7 @@
                 <td>
                     <div class="btn-group">
                         <a href="/clientes/editar/{{ c.id }}" class="btn btn-sm btn-secondary">Editar</a>
-                        <a href="/clientes/eliminar/{{ c.id }}" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que quieres eliminar este cliente?')">Eliminar</a>
+                        <a href="/clientes/eliminar/{{ c.id }}" class="btn btn-sm btn-danger" data-confirm="¿Seguro que quieres eliminar este cliente?">Eliminar</a>
                     </div>
                 </td>
             </tr>
