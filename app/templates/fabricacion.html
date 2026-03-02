@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Fabricación - ERP Toyota{% endblock %}
+{% block page_title %}Fabricación{% endblock %}
+
+{% block content %}
+<form method="GET" class="search-bar">
+    <input type="text" class="search-input" name="q" value="{{ q or '' }}" placeholder="Buscar orden, vehículo, destino o estado...">
+</form>
+
+<div class="table-card">
+    <div class="table-card-header">
+        <h2 class="table-card-title">🏗️ Órdenes de Fabricación</h2>
+        <div class="table-actions">
+            <a href="/fabricacion/nueva" class="btn btn-sm btn-primary">+ Nueva Orden</a>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Vehículo</th>
+                <th>Cantidad</th>
+                <th>Destino</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in ordenes %}
+            <tr>
+                <td><strong>#{{ o.id }}</strong></td>
+                <td>{{ o.fecha }}</td>
+                <td>{{ o.vehiculo }}</td>
+                <td>{{ o.cantidad }}</td>
+                <td>{{ o.almacen_destino }}</td>
+                <td>{{ o.estado }}</td>
+                <td>
+                    <a href="/fabricacion/{{ o.id }}" class="btn btn-sm btn-primary">Ver</a>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not ordenes %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">No hay órdenes de fabricación</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="?page=1{% if q %}&q={{ q }}{% endif %}">Primera</a>
+        <a href="?page={{ page-1 }}{% if q %}&q={{ q }}{% endif %}">Anterior</a>
+    {% endif %}
+
+    {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+        <span class="active">{{ p }}</span>
+        {% else %}
+        <a href="?page={{ p }}{% if q %}&q={{ q }}{% endif %}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < pages %}
+        <a href="?page={{ page+1 }}{% if q %}&q={{ q }}{% endif %}">Siguiente</a>
+        <a href="?page={{ pages }}{% if q %}&q={{ q }}{% endif %}">Última</a>
+    {% endif %}
+</div>
+{% endblock %}

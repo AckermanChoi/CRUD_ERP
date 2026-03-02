@@ -1757,6 +1757,324 @@ def eliminar_compra(id):
         return redirect("/compras")
 
 
+# ---------------- FABRICACION ----------------
+@app.route("/fabricacion")
+@login_required
+def fabricacion():
+    page = int(request.args.get('page', 1))
+    per_page = 10
+    offset = (page - 1) * per_page
+    q = request.args.get('q', '').strip()
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    if q:
+        like = f"%{q}%"
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS cnt
+            FROM fabricacion_ordenes fo
+            JOIN vehiculos v ON fo.vehiculo_id = v.id
+            JOIN almacenes a ON fo.almacen_destino_id = a.id
+            WHERE fo.id LIKE %s OR v.modelo LIKE %s OR a.ubicacion LIKE %s OR fo.estado LIKE %s
+            """,
+            (like, like, like, like)
+        )
+        total = cursor.fetchone()['cnt']
+        cursor.execute(
+            """
+            SELECT fo.id, fo.fecha, fo.cantidad, fo.estado, fo.observaciones,
+                   v.modelo AS vehiculo,
+                   a.ubicacion AS almacen_destino
+            FROM fabricacion_ordenes fo
+            JOIN vehiculos v ON fo.vehiculo_id = v.id
+            JOIN almacenes a ON fo.almacen_destino_id = a.id
+            WHERE fo.id LIKE %s OR v.modelo LIKE %s OR a.ubicacion LIKE %s OR fo.estado LIKE %s
+            ORDER BY fo.id DESC
+            LIMIT %s OFFSET %s
+            """,
+            (like, like, like, like, per_page, offset)
+        )
+    else:
+        cursor.execute("SELECT COUNT(*) AS cnt FROM fabricacion_ordenes")
+        total = cursor.fetchone()['cnt']
+        cursor.execute(
+            """
+            SELECT fo.id, fo.fecha, fo.cantidad, fo.estado, fo.observaciones,
+                   v.modelo AS vehiculo,
+                   a.ubicacion AS almacen_destino
+            FROM fabricacion_ordenes fo
+            JOIN vehiculos v ON fo.vehiculo_id = v.id
+            JOIN almacenes a ON fo.almacen_destino_id = a.id
+            ORDER BY fo.id DESC
+            LIMIT %s OFFSET %s
+            """,
+            (per_page, offset)
+        )
+
+    ordenes = cursor.fetchall()
+    pages = max(1, (total + per_page - 1) // per_page)
+    db.close()
+
+    return render_template(
+        "fabricacion.html",
+        ordenes=ordenes,
+        page=page,
+        per_page=per_page,
+        total=total,
+        pages=pages,
+        q=q
+    )
+
+
+@app.route("/fabricacion/nueva", methods=["GET", "POST"])
+@login_required
+@role_required(action='add')
+def nueva_fabricacion():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("SELECT id, modelo, tipo, anio FROM vehiculos ORDER BY modelo")
+    vehiculos = cursor.fetchall()
+
+    cursor.execute("SELECT id, ubicacion, disponible FROM almacenes WHERE tipo_almacen='Vehiculos' ORDER BY ubicacion")
+    almacenes_destino = cursor.fetchall()
+
+    if request.method == "POST":
+        vehiculo_id = request.form.get("vehiculo_id")
+        almacen_destino_id = request.form.get("almacen_destino_id")
+        cantidad_raw = request.form.get("cantidad", "").strip()
+        observaciones = request.form.get("observaciones", "").strip()
+
+        errors = []
+        cantidad = to_decimal(cantidad_raw)
+        if not vehiculo_id:
+            errors.append("Selecciona un vehículo")
+        if not almacen_destino_id:
+            errors.append("Selecciona un almacén destino de vehículos")
+        if cantidad is None or cantidad <= 0:
+            errors.append("La cantidad a fabricar debe ser mayor a 0")
+
+        if errors:
+            for err in errors:
+                flash(err, "error")
+            db.close()
+            return render_template(
+                "fabricacion_form.html",
+                vehiculos=vehiculos,
+                almacenes_destino=almacenes_destino,
+                cabecera={
+                    "vehiculo_id": vehiculo_id,
+                    "almacen_destino_id": almacen_destino_id,
+                    "cantidad": cantidad_raw,
+                    "observaciones": observaciones,
+                }
+            )
+
+        try:
+            c_lock = db.cursor(dictionary=True)
+
+            c_lock.execute(
+                "SELECT id, disponible, tipo_almacen FROM almacenes WHERE id=%s FOR UPDATE",
+                (almacen_destino_id,)
+            )
+            almacen_destino = c_lock.fetchone()
+            if not almacen_destino:
+                raise ValueError("Almacén destino no encontrado")
+            if almacen_destino['tipo_almacen'] != 'Vehiculos':
+                raise ValueError("El almacén destino debe ser de tipo 'Vehiculos'")
+
+            disponible_destino = to_decimal(almacen_destino.get('disponible')) or Decimal("0")
+            if disponible_destino < cantidad:
+                raise ValueError("No hay capacidad disponible suficiente en el almacén destino")
+
+            c_lock.execute(
+                """
+                SELECT articulo_id, cantidad_por_unidad
+                FROM fabricacion_bom
+                WHERE vehiculo_id = %s
+                """,
+                (vehiculo_id,)
+            )
+            bom_rows = c_lock.fetchall()
+            if not bom_rows:
+                raise ValueError("El vehículo seleccionado no tiene BOM definido")
+
+            required = {}
+            for row in bom_rows:
+                qpu = to_decimal(row['cantidad_por_unidad']) or Decimal("0")
+                req = quantize_money(qpu * cantidad)
+                required[row['articulo_id']] = req
+
+            allocations = []
+            consumed_by_almacen = {}
+
+            for articulo_id, qty_required in required.items():
+                remaining = qty_required
+                c_lock.execute(
+                    """
+                    SELECT e.almacen_id, e.cantidad
+                    FROM existencias e
+                    JOIN almacenes a ON a.id = e.almacen_id
+                    WHERE e.articulo_id = %s
+                      AND a.tipo_almacen <> 'Vehiculos'
+                      AND e.cantidad > 0
+                    ORDER BY e.cantidad DESC
+                    FOR UPDATE
+                    """,
+                    (articulo_id,)
+                )
+                stocks = c_lock.fetchall()
+
+                for stock in stocks:
+                    if remaining <= 0:
+                        break
+                    available = to_decimal(stock['cantidad']) or Decimal("0")
+                    if available <= 0:
+                        continue
+                    take = available if available <= remaining else remaining
+                    take = quantize_money(take)
+                    if take <= 0:
+                        continue
+
+                    allocations.append({
+                        "articulo_id": articulo_id,
+                        "almacen_origen_id": stock['almacen_id'],
+                        "cantidad": take
+                    })
+
+                    consumed_by_almacen[stock['almacen_id']] = (
+                        consumed_by_almacen.get(stock['almacen_id'], Decimal("0")) + take
+                    )
+                    remaining = quantize_money(remaining - take)
+
+                if remaining > 0:
+                    c_lock.execute("SELECT nombre FROM articulos WHERE id=%s", (articulo_id,))
+                    art = c_lock.fetchone()
+                    nombre = art['nombre'] if art else f"ID {articulo_id}"
+                    raise ValueError(f"Stock insuficiente para el artículo {nombre}")
+
+            c_write = db.cursor()
+            c_write.execute(
+                """
+                INSERT INTO fabricacion_ordenes (vehiculo_id, cantidad, almacen_destino_id, estado, observaciones)
+                VALUES (%s, %s, %s, 'confirmada', %s)
+                """,
+                (vehiculo_id, cantidad, almacen_destino_id, observaciones or None)
+            )
+            orden_id = c_write.lastrowid
+
+            for alloc in allocations:
+                c_write.execute(
+                    """
+                    INSERT INTO fabricacion_consumos (orden_id, articulo_id, almacen_origen_id, cantidad)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (orden_id, alloc['articulo_id'], alloc['almacen_origen_id'], alloc['cantidad'])
+                )
+
+                c_write.execute(
+                    """
+                    UPDATE existencias
+                    SET cantidad = cantidad - %s
+                    WHERE almacen_id = %s AND articulo_id = %s
+                    """,
+                    (alloc['cantidad'], alloc['almacen_origen_id'], alloc['articulo_id'])
+                )
+
+            for almacen_origen_id, cantidad_consumida in consumed_by_almacen.items():
+                c_write.execute(
+                    "UPDATE almacenes SET disponible = disponible + %s WHERE id = %s",
+                    (cantidad_consumida, almacen_origen_id)
+                )
+
+            c_write.execute(
+                "UPDATE almacenes SET disponible = disponible - %s WHERE id = %s",
+                (cantidad, almacen_destino_id)
+            )
+
+            c_write.execute(
+                """
+                INSERT INTO stock_vehiculos (almacen_id, vehiculo_id, cantidad)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+                """,
+                (almacen_destino_id, vehiculo_id, cantidad)
+            )
+
+            db.commit()
+            db.close()
+            flash("Orden de fabricación confirmada", "success")
+            return redirect(f"/fabricacion/{orden_id}")
+        except Exception as e:
+            db.rollback()
+            db.close()
+            flash(f"Error al confirmar la fabricación: {e}", "error")
+            return render_template(
+                "fabricacion_form.html",
+                vehiculos=vehiculos,
+                almacenes_destino=almacenes_destino,
+                cabecera={
+                    "vehiculo_id": vehiculo_id,
+                    "almacen_destino_id": almacen_destino_id,
+                    "cantidad": cantidad_raw,
+                    "observaciones": observaciones,
+                }
+            )
+
+    db.close()
+    return render_template(
+        "fabricacion_form.html",
+        vehiculos=vehiculos,
+        almacenes_destino=almacenes_destino,
+        cabecera={}
+    )
+
+
+@app.route("/fabricacion/<int:id>")
+@login_required
+def fabricacion_detalle(id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute(
+        """
+        SELECT fo.id, fo.fecha, fo.cantidad, fo.estado, fo.observaciones,
+               v.id AS vehiculo_id, v.modelo AS vehiculo,
+               a.id AS almacen_destino_id, a.ubicacion AS almacen_destino
+        FROM fabricacion_ordenes fo
+        JOIN vehiculos v ON fo.vehiculo_id = v.id
+        JOIN almacenes a ON fo.almacen_destino_id = a.id
+        WHERE fo.id = %s
+        """,
+        (id,)
+    )
+    orden = cursor.fetchone()
+    if not orden:
+        db.close()
+        flash("Orden de fabricación no encontrada", "error")
+        return redirect("/fabricacion")
+
+    cursor.execute(
+        """
+        SELECT fc.articulo_id, ar.nombre AS articulo,
+               fc.almacen_origen_id, ao.ubicacion AS almacen_origen,
+               fc.cantidad
+        FROM fabricacion_consumos fc
+        JOIN articulos ar ON ar.id = fc.articulo_id
+        JOIN almacenes ao ON ao.id = fc.almacen_origen_id
+        WHERE fc.orden_id = %s
+        ORDER BY ar.nombre, ao.ubicacion
+        """,
+        (id,)
+    )
+    consumos = cursor.fetchall()
+
+    db.close()
+    return render_template("fabricacion_detalle.html", orden=orden, consumos=consumos)
+
+
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)

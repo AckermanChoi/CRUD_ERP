@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Fabricación - ERP Toyota{% endblock %}
+{% block page_title %}Detalle Orden #{{ orden.id }}{% endblock %}
+
+{% block content %}
+<div class="table-card" style="margin-bottom: 20px;">
+    <div class="table-card-header">
+        <h2 class="table-card-title">🏗️ Orden de Fabricación #{{ orden.id }}</h2>
+        <div class="table-actions">
+            <a href="/fabricacion" class="btn btn-sm btn-secondary">← Volver</a>
+        </div>
+    </div>
+
+    <div class="invoice-grid">
+        <div class="field">
+            <label>Fecha</label>
+            <div class="readonly-field">{{ orden.fecha }}</div>
+        </div>
+        <div class="field">
+            <label>Vehículo</label>
+            <div class="readonly-field"><strong>{{ orden.vehiculo }}</strong></div>
+        </div>
+        <div class="field">
+            <label>Cantidad Fabricada</label>
+            <div class="readonly-field"><strong>{{ orden.cantidad }}</strong></div>
+        </div>
+        <div class="field">
+            <label>Almacén Destino</label>
+            <div class="readonly-field">{{ orden.almacen_destino }}</div>
+        </div>
+        <div class="field">
+            <label>Estado</label>
+            <div class="readonly-field">{{ orden.estado }}</div>
+        </div>
+        <div class="field">
+            <label>Observaciones</label>
+            <div class="readonly-field">{{ orden.observaciones or '-' }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="table-card-header">
+        <h2 class="table-card-title">📦 Consumos de Componentes</h2>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Artículo</th>
+                <th>Almacén Origen</th>
+                <th>Cantidad Consumida</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in consumos %}
+            <tr>
+                <td>{{ c.articulo }}</td>
+                <td>{{ c.almacen_origen }}</td>
+                <td><strong>{{ c.cantidad }}</strong></td>
+            </tr>
+            {% endfor %}
+            {% if not consumos %}
+            <tr>
+                <td colspan="3" class="text-center text-muted">Sin consumos registrados</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

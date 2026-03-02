@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Fabricación - ERP Toyota{% endblock %}
+{% block page_title %}Nueva Fabricación{% endblock %}
+
+{% block content %}
+{% include "_form_styles.html" %}
+<div class="form-card">
+    <div class="form-card-header">
+        <h2>🏗️ Nueva Orden de Fabricación</h2>
+    </div>
+
+    <form method="POST" class="form-content">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="vehiculo_id">Vehículo a fabricar *</label>
+                <select id="vehiculo_id" name="vehiculo_id" required>
+                    <option value="">Selecciona vehículo</option>
+                    {% for v in vehiculos %}
+                    <option value="{{ v.id }}" {% if cabecera and cabecera.vehiculo_id|string == v.id|string %}selected{% endif %}>
+                        {{ v.modelo }} ({{ v.tipo }}, {{ v.anio }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cantidad">Cantidad *</label>
+                <input type="number" id="cantidad" name="cantidad" step="0.01" min="0.01" value="{{ cabecera.cantidad if cabecera else '' }}" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="almacen_destino_id">Almacén destino (solo vehículos) *</label>
+            <select id="almacen_destino_id" name="almacen_destino_id" required>
+                <option value="">Selecciona almacén destino</option>
+                {% for a in almacenes_destino %}
+                <option value="{{ a.id }}" {% if cabecera and cabecera.almacen_destino_id|string == a.id|string %}selected{% endif %}>
+                    {{ a.ubicacion }} (capacidad libre: {{ a.disponible }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="observaciones">Observaciones</label>
+            <textarea id="observaciones" name="observaciones" rows="3">{{ cabecera.observaciones if cabecera else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="/fabricacion" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Confirmar fabricación</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

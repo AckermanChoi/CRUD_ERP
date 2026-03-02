@@ -613,4 +613,67 @@ textarea {
     color: #0d2b5c;
 }
 
+.search-bar {
+    margin-bottom: 16px;
+}
+
+.search-input {
+    width: 100%;
+    max-width: 420px;
+    background: white;
+}
+
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.pagination a,
+.pagination span {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    border: 1px solid #dbe4ee;
+    background: white;
+    color: #0d2b5c;
+}
+
+.pagination span.active {
+    background: #2f80ed;
+    color: white;
+    border-color: #2f80ed;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e8edf3;
+}
+
+.readonly-field {
+    background: #f6f8fb;
+    border: 1px solid #dfe7f0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    min-height: 42px;
+}
+
+.invoice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
 
