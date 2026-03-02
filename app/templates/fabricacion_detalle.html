@@ -3,6 +3,18 @@
 {% block title %}Detalle Fabricación - ERP Toyota{% endblock %}
 {% block page_title %}Detalle Orden #{{ orden.id }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.fabricacion-resumen {
+    padding: 0 20px 20px;
+}
+
+.fabricacion-resumen .invoice-grid {
+    gap: 16px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="table-card" style="margin-bottom: 20px;">
     <div class="table-card-header">
@@ -12,30 +24,32 @@
         </div>
     </div>
 
-    <div class="invoice-grid">
-        <div class="field">
-            <label>Fecha</label>
-            <div class="readonly-field">{{ orden.fecha }}</div>
-        </div>
-        <div class="field">
-            <label>Vehículo</label>
-            <div class="readonly-field"><strong>{{ orden.vehiculo }}</strong></div>
-        </div>
-        <div class="field">
-            <label>Cantidad Fabricada</label>
-            <div class="readonly-field"><strong>{{ orden.cantidad|int }}</strong></div>
-        </div>
-        <div class="field">
-            <label>Almacén Destino</label>
-            <div class="readonly-field">{{ orden.almacen_destino }}</div>
-        </div>
-        <div class="field">
-            <label>Estado</label>
-            <div class="readonly-field">{{ orden.estado }}</div>
-        </div>
-        <div class="field">
-            <label>Observaciones</label>
-            <div class="readonly-field">{{ orden.observaciones or '-' }}</div>
+    <div class="fabricacion-resumen">
+        <div class="invoice-grid">
+            <div class="field">
+                <label>Fecha</label>
+                <div class="readonly-field">{{ orden.fecha }}</div>
+            </div>
+            <div class="field">
+                <label>Vehículo</label>
+                <div class="readonly-field"><strong>{{ orden.vehiculo }}</strong></div>
+            </div>
+            <div class="field">
+                <label>Cantidad Fabricada</label>
+                <div class="readonly-field"><strong>{{ orden.cantidad|int }}</strong></div>
+            </div>
+            <div class="field">
+                <label>Almacén Destino</label>
+                <div class="readonly-field">{{ orden.almacen_destino }}</div>
+            </div>
+            <div class="field">
+                <label>Estado</label>
+                <div class="readonly-field">{{ orden.estado }}</div>
+            </div>
+            <div class="field">
+                <label>Observaciones</label>
+                <div class="readonly-field">{{ orden.observaciones or '-' }}</div>
+            </div>
         </div>
     </div>
 </div>

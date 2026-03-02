@@ -1,39 +1,62 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="compras-page">
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
+{% extends "base.html" %}
+
+{% block title %}Nueva compra - ERP Toyota{% endblock %}
+{% block page_title %}Nueva compra{% endblock %}
+
+{% block extra_css %}
+{% include "_form_styles.html" %}
+<style>
+.invoice-form-card { max-width: 1200px; }
+.invoice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.invoice-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 10px; }
+.search-box { position: relative; }
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #dbe4ee;
+    border-radius: 6px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    display: none;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 30;
+}
+.search-result-item { padding: 10px 12px; cursor: pointer; }
+.search-result-item:hover { background: #f5f9ff; }
+.readonly-input { background: #f6f8fb; }
+.line-items { margin-top: 18px; }
+.section-title { font-weight: 700; color: #0d2b5c; margin-bottom: 10px; }
+.line-table { width: 100%; border-collapse: collapse; }
+.line-table th, .line-table td { padding: 10px; border-bottom: 1px solid #e8edf3; }
+.line-table th { text-transform: uppercase; font-size: 12px; color: #0d2b5c; background: #f5f7fa; }
+.line-actions { margin-top: 12px; }
+.form-actions-wide { justify-content: space-between; }
+@media (max-width: 960px) {
+    .invoice-grid, .invoice-grid-2 { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-card invoice-form-card">
+    <div class="form-card-header">
+        <h2>📦 Nueva compra</h2>
     </div>
-    <div class="page-title">Nueva compra</div>
-</header>
-{% include '_flash.html' %}
-<div class="container compras-shell">
-    <div class="compras-header">
-        <h1>Nueva compra</h1>
-    </div>
-    <form method="POST" class="compras-form">
-        <div class="compras-row">
-            <div class="field">
+
+    <form method="POST" class="form-content">
+        <div class="invoice-grid">
+            <div class="form-group">
                 <label for="compra_id">ID Compra</label>
                 <input type="text" id="compra_id" class="readonly-input" value="Auto" readonly>
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="fecha">Fecha</label>
                 <input type="date" id="fecha" name="fecha" value="{{ cabecera.fecha if cabecera else '' }}" required>
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="almacen">Almacén destino</label>
                 <select id="almacen" name="almacen" required>
                     <option value="">Selecciona almacén</option>
@@ -44,48 +67,46 @@
             </div>
         </div>
 
-        <div class="compras-row">
-            <div class="field">
-                <label for="proveedor_id">ID Proveedor</label>
+        <div class="invoice-grid-2">
+            <div class="form-group">
+                <label for="proveedor_id_display">ID Proveedor</label>
                 <input type="text" id="proveedor_id_display" class="readonly-input" value="{{ cabecera.proveedor_id if cabecera else '' }}" readonly>
                 <input type="hidden" id="proveedor_id" name="proveedor_id" value="{{ cabecera.proveedor_id if cabecera else '' }}">
             </div>
-            <div class="field">
-                <label>Total calculado</label>
+            <div class="form-group">
+                <label for="total-compra">Total calculado</label>
                 <input type="text" id="total-compra" class="readonly-input" value="0.00" readonly>
             </div>
         </div>
 
-        <div class="compras-actions compras-actions-centered">
-            <div class="field search-field search-inline">
-                <label for="proveedor_search">Buscar proveedor</label>
-                <input type="text" id="proveedor_search" placeholder="Nombre o DNI" autocomplete="off">
-                <div id="proveedor_results" class="search-results"></div>
-            </div>
+        <div class="form-group search-box">
+            <label for="proveedor_search">Buscar proveedor</label>
+            <input type="text" id="proveedor_search" placeholder="Nombre o DNI" autocomplete="off">
+            <div id="proveedor_results" class="search-results"></div>
         </div>
 
-        <div class="provider-grid">
-            <div class="field">
+        <div class="invoice-grid">
+            <div class="form-group">
                 <label for="proveedor_nombre">Nombre</label>
                 <input type="text" id="proveedor_nombre" name="proveedor_nombre" value="{{ cabecera.proveedor_nombre if cabecera else '' }}">
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="proveedor_apellido">Apellido</label>
                 <input type="text" id="proveedor_apellido" name="proveedor_apellido" value="{{ cabecera.proveedor_apellido if cabecera else '' }}">
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="proveedor_dni">DNI/NIE</label>
                 <input type="text" id="proveedor_dni" name="proveedor_dni" value="{{ cabecera.proveedor_dni if cabecera else '' }}">
             </div>
-            <div class="field">
-                <label for="proveedor_correo">Correo electronico</label>
+            <div class="form-group">
+                <label for="proveedor_correo">Correo electrónico</label>
                 <input type="email" id="proveedor_correo" name="proveedor_correo" value="{{ cabecera.proveedor_correo if cabecera else '' }}">
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="proveedor_contacto">Contacto</label>
                 <input type="text" id="proveedor_contacto" name="proveedor_contacto" value="{{ cabecera.proveedor_contacto if cabecera else '' }}">
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="proveedor_tipo">Tipo de suministro</label>
                 <input type="text" id="proveedor_tipo" name="proveedor_tipo" value="{{ cabecera.proveedor_tipo if cabecera else '' }}">
             </div>
@@ -93,16 +114,16 @@
 
         <div class="line-items">
             <div class="section-title">Detalle de compra</div>
-            <table class="line-table" border="1">
+            <table class="line-table">
                 <tr>
-                    <th>Linea</th>
-                    <th>Nombre articulo</th>
+                    <th>Línea</th>
+                    <th>Nombre artículo</th>
                     <th>Cantidad</th>
                     <th>Precio unitario</th>
                     <th>Subtotal</th>
                     <th>IVA %</th>
                     <th>Descuento %</th>
-                    <th>Total linea</th>
+                    <th>Total línea</th>
                 </tr>
                 {% for linea in lineas %}
                 <tr class="linea-row">
@@ -118,7 +139,7 @@
                 {% endfor %}
             </table>
             <div class="line-actions">
-                <button type="button" class="btn btn-secondary" id="add-linea">Agregar linea</button>
+                <button type="button" class="btn btn-secondary" id="add-linea">Agregar línea</button>
             </div>
         </div>
 
@@ -128,23 +149,23 @@
         </div>
     </form>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 (function() {
     function recalc() {
         var rows = document.querySelectorAll('.linea-row');
         var totalCompra = 0;
         rows.forEach(function(row, idx) {
-            var qty = parseFloat(row.querySelector('input[name="linea_cantidad"]').value) || 0;
-            var price = parseFloat(row.querySelector('input[name="linea_precio"]').value) || 0;
-            var iva = parseFloat(row.querySelector('input[name="linea_iva"]').value) || 0;
-            var descuento = parseFloat(row.querySelector('input[name="linea_descuento"]').value) || 0;
+            var qty = Number.parseFloat(row.querySelector('input[name="linea_cantidad"]').value) || 0;
+            var price = Number.parseFloat(row.querySelector('input[name="linea_precio"]').value) || 0;
+            var iva = Number.parseFloat(row.querySelector('input[name="linea_iva"]').value) || 0;
+            var descuento = Number.parseFloat(row.querySelector('input[name="linea_descuento"]').value) || 0;
             var subtotal = qty * price;
             var total = subtotal * (1 + (iva / 100)) * (1 - (descuento / 100));
             var subtotalField = row.querySelector('.linea-subtotal');
-            if (subtotalField) {
-                subtotalField.value = subtotal.toFixed(2);
-            }
+            if (subtotalField) subtotalField.value = subtotal.toFixed(2);
             row.querySelector('.linea-total').value = total.toFixed(2);
             totalCompra += total;
             row.querySelector('.linea-num').textContent = idx + 1;
@@ -175,6 +196,7 @@
             recalc();
         }
     });
+
     var searchInput = document.getElementById('proveedor_search');
     var resultsBox = document.getElementById('proveedor_results');
     var proveedorIdInput = document.getElementById('proveedor_id');
@@ -209,10 +231,7 @@
             .then(function(resp) { return resp.json(); })
             .then(function(data) {
                 resultsBox.innerHTML = '';
-                if (!data.length) {
-                    clearResults();
-                    return;
-                }
+                if (!data.length) return clearResults();
                 data.forEach(function(p) {
                     var item = document.createElement('div');
                     item.className = 'search-result-item';
@@ -222,18 +241,14 @@
                 });
                 resultsBox.style.display = 'block';
             })
-            .catch(function() {
-                clearResults();
-            });
+            .catch(clearResults);
     });
 
     document.addEventListener('click', function(e) {
-        if (!resultsBox.contains(e.target) && e.target !== searchInput) {
-            clearResults();
-        }
+        if (!resultsBox.contains(e.target) && e.target !== searchInput) clearResults();
     });
+
     recalc();
 })();
 </script>
-</body>
-</html>
+{% endblock %}

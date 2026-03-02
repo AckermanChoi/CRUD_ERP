@@ -1,42 +1,65 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>ERP Toyota</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="compras-page">
-<header>
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Toyota Logo">
-    <h1>ERP Toyota</h1>
-    <div class="header-right">
-        {% if session.empleado_nombre %}
-            Bienvenido, {{ session.empleado_nombre }} | <a href="/logout">Salir</a>
-        {% else %}
-            <a href="/login">Acceder</a>
-        {% endif %}
+{% extends "base.html" %}
+
+{% block title %}Nueva venta - ERP Toyota{% endblock %}
+{% block page_title %}Nueva venta{% endblock %}
+
+{% block extra_css %}
+{% include "_form_styles.html" %}
+<style>
+.invoice-form-card { max-width: 1200px; }
+.invoice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.invoice-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 10px; }
+.search-box { position: relative; }
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #dbe4ee;
+    border-radius: 6px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    display: none;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 30;
+}
+.search-result-item { padding: 10px 12px; cursor: pointer; }
+.search-result-item:hover { background: #f5f9ff; }
+.readonly-input { background: #f6f8fb; }
+.line-items { margin-top: 18px; }
+.section-title { font-weight: 700; color: #0d2b5c; margin-bottom: 10px; }
+.line-table { width: 100%; border-collapse: collapse; }
+.line-table th, .line-table td { padding: 10px; border-bottom: 1px solid #e8edf3; }
+.line-table th { text-transform: uppercase; font-size: 12px; color: #0d2b5c; background: #f5f7fa; }
+.line-actions { margin-top: 12px; }
+.form-actions-wide { justify-content: space-between; }
+@media (max-width: 960px) {
+    .invoice-grid, .invoice-grid-2 { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-card invoice-form-card">
+    <div class="form-card-header">
+        <h2>💵 Nueva venta</h2>
     </div>
-    <div class="page-title">Nueva venta</div>
-</header>
-{% include '_flash.html' %}
-<div class="container compras-shell">
-    <div class="compras-header">
-        <h1>Nueva venta</h1>
-    </div>
-    <form method="POST" class="compras-form">
-        <div class="compras-row">
-            <div class="field">
+
+    <form method="POST" class="form-content">
+        <div class="invoice-grid">
+            <div class="form-group">
                 <label for="venta_id">ID Venta</label>
                 <input type="text" id="venta_id" class="readonly-input" value="Auto" readonly>
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="fecha">Fecha</label>
                 <input type="date" id="fecha" name="fecha" value="{{ cabecera.fecha if cabecera else '' }}" required>
             </div>
-            <div class="field">
-                <label for="almacen">Almacen salida</label>
+            <div class="form-group">
+                <label for="almacen">Almacén salida</label>
                 <select id="almacen" name="almacen" required>
-                    <option value="">Selecciona almacen</option>
+                    <option value="">Selecciona almacén</option>
                     {% for a in almacenes %}
                         <option value="{{ a.id }}" {% if cabecera and cabecera.almacen_id == a.id|string %}selected{% endif %}>{{ a.ubicacion }}</option>
                     {% endfor %}
@@ -44,48 +67,46 @@
             </div>
         </div>
 
-        <div class="compras-row">
-            <div class="field">
-                <label for="cliente_id">ID Cliente</label>
+        <div class="invoice-grid-2">
+            <div class="form-group">
+                <label for="cliente_id_display">ID Cliente</label>
                 <input type="text" id="cliente_id_display" class="readonly-input" value="{{ cabecera.cliente_id if cabecera else '' }}" readonly>
                 <input type="hidden" id="cliente_id" name="cliente_id" value="{{ cabecera.cliente_id if cabecera else '' }}">
             </div>
-            <div class="field">
-                <label>Total calculado</label>
+            <div class="form-group">
+                <label for="total-venta">Total calculado</label>
                 <input type="text" id="total-venta" class="readonly-input" value="0.00" readonly>
             </div>
         </div>
 
-        <div class="compras-actions compras-actions-centered">
-            <div class="field search-field search-inline">
-                <label for="cliente_search">Buscar cliente</label>
-                <input type="text" id="cliente_search" placeholder="Nombre o DNI" autocomplete="off">
-                <div id="cliente_results" class="search-results"></div>
-            </div>
+        <div class="form-group search-box">
+            <label for="cliente_search">Buscar cliente</label>
+            <input type="text" id="cliente_search" placeholder="Nombre o DNI" autocomplete="off">
+            <div id="cliente_results" class="search-results"></div>
         </div>
 
-        <div class="provider-grid">
-            <div class="field">
+        <div class="invoice-grid">
+            <div class="form-group">
                 <label for="cliente_nombre">Nombre</label>
                 <input type="text" id="cliente_nombre" name="cliente_nombre" value="{{ cabecera.cliente_nombre if cabecera else '' }}">
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="cliente_dni">DNI/NIE</label>
                 <input type="text" id="cliente_dni" name="cliente_dni" value="{{ cabecera.cliente_dni if cabecera else '' }}">
             </div>
-            <div class="field">
-                <label for="cliente_correo">Correo electronico</label>
+            <div class="form-group">
+                <label for="cliente_correo">Correo electrónico</label>
                 <input type="email" id="cliente_correo" name="cliente_correo" value="{{ cabecera.cliente_correo if cabecera else '' }}">
             </div>
-            <div class="field">
-                <label for="cliente_telefono">Telefono</label>
+            <div class="form-group">
+                <label for="cliente_telefono">Teléfono</label>
                 <input type="text" id="cliente_telefono" name="cliente_telefono" value="{{ cabecera.cliente_telefono if cabecera else '' }}">
             </div>
-            <div class="field">
-                <label for="cliente_pais">Pais</label>
+            <div class="form-group">
+                <label for="cliente_pais">País</label>
                 <input type="text" id="cliente_pais" name="cliente_pais" value="{{ cabecera.cliente_pais if cabecera else '' }}">
             </div>
-            <div class="field">
+            <div class="form-group">
                 <label for="cliente_tipo">Tipo</label>
                 <input type="text" id="cliente_tipo" name="cliente_tipo" value="{{ cabecera.cliente_tipo if cabecera else '' }}">
             </div>
@@ -93,16 +114,16 @@
 
         <div class="line-items">
             <div class="section-title">Detalle de venta</div>
-            <table class="line-table" border="1">
+            <table class="line-table">
                 <tr>
-                    <th>Linea</th>
-                    <th>Nombre articulo</th>
+                    <th>Línea</th>
+                    <th>Nombre artículo</th>
                     <th>Cantidad</th>
                     <th>Precio unitario</th>
                     <th>Subtotal</th>
                     <th>IVA %</th>
                     <th>Descuento %</th>
-                    <th>Total linea</th>
+                    <th>Total línea</th>
                 </tr>
                 {% for linea in lineas %}
                 <tr class="linea-row">
@@ -119,7 +140,7 @@
             </table>
             <datalist id="articulos_datalist"></datalist>
             <div class="line-actions">
-                <button type="button" class="btn btn-secondary" id="add-linea">Agregar linea</button>
+                <button type="button" class="btn btn-secondary" id="add-linea">Agregar línea</button>
             </div>
         </div>
 
@@ -129,23 +150,23 @@
         </div>
     </form>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 (function() {
     function recalc() {
         var rows = document.querySelectorAll('.linea-row');
         var totalVenta = 0;
         rows.forEach(function(row, idx) {
-            var qty = parseFloat(row.querySelector('input[name="linea_cantidad"]').value) || 0;
-            var price = parseFloat(row.querySelector('input[name="linea_precio"]').value) || 0;
-            var iva = parseFloat(row.querySelector('input[name="linea_iva"]').value) || 0;
-            var descuento = parseFloat(row.querySelector('input[name="linea_descuento"]').value) || 0;
+            var qty = Number.parseFloat(row.querySelector('input[name="linea_cantidad"]').value) || 0;
+            var price = Number.parseFloat(row.querySelector('input[name="linea_precio"]').value) || 0;
+            var iva = Number.parseFloat(row.querySelector('input[name="linea_iva"]').value) || 0;
+            var descuento = Number.parseFloat(row.querySelector('input[name="linea_descuento"]').value) || 0;
             var subtotal = qty * price;
             var total = subtotal * (1 + (iva / 100)) * (1 - (descuento / 100));
             var subtotalField = row.querySelector('.linea-subtotal');
-            if (subtotalField) {
-                subtotalField.value = subtotal.toFixed(2);
-            }
+            if (subtotalField) subtotalField.value = subtotal.toFixed(2);
             row.querySelector('.linea-total').value = total.toFixed(2);
             totalVenta += total;
             row.querySelector('.linea-num').textContent = idx + 1;
@@ -176,19 +197,14 @@
             recalc();
         }
     });
+
     var almacenSelect = document.getElementById('almacen');
     var articulosDatalist = document.getElementById('articulos_datalist');
-
-    function clearArticulos() {
-        articulosDatalist.innerHTML = '';
-    }
+    function clearArticulos() { articulosDatalist.innerHTML = ''; }
 
     function updateArticulos(q) {
         var almacenId = almacenSelect.value;
-        if (!almacenId) {
-            clearArticulos();
-            return;
-        }
+        if (!almacenId) return clearArticulos();
         fetch('/almacenes/' + encodeURIComponent(almacenId) + '/articulos/buscar?q=' + encodeURIComponent(q))
             .then(function(resp) { return resp.json(); })
             .then(function(data) {
@@ -199,25 +215,18 @@
                     articulosDatalist.appendChild(opt);
                 });
             })
-            .catch(function() {
-                clearArticulos();
-            });
+            .catch(clearArticulos);
     }
 
-    almacenSelect.addEventListener('change', function() {
-        clearArticulos();
-    });
-
+    almacenSelect.addEventListener('change', clearArticulos);
     document.addEventListener('input', function(e) {
         if (e.target && e.target.name === 'linea_nombre') {
             var q = e.target.value.trim();
-            if (q.length < 2) {
-                clearArticulos();
-                return;
-            }
+            if (q.length < 2) return clearArticulos();
             updateArticulos(q);
         }
     });
+
     var searchInput = document.getElementById('cliente_search');
     var resultsBox = document.getElementById('cliente_results');
     var clienteIdInput = document.getElementById('cliente_id');
@@ -252,10 +261,7 @@
             .then(function(resp) { return resp.json(); })
             .then(function(data) {
                 resultsBox.innerHTML = '';
-                if (!data.length) {
-                    clearResults();
-                    return;
-                }
+                if (!data.length) return clearResults();
                 data.forEach(function(c) {
                     var item = document.createElement('div');
                     item.className = 'search-result-item';
@@ -265,18 +271,14 @@
                 });
                 resultsBox.style.display = 'block';
             })
-            .catch(function() {
-                clearResults();
-            });
+            .catch(clearResults);
     });
 
     document.addEventListener('click', function(e) {
-        if (!resultsBox.contains(e.target) && e.target !== searchInput) {
-            clearResults();
-        }
+        if (!resultsBox.contains(e.target) && e.target !== searchInput) clearResults();
     });
+
     recalc();
 })();
 </script>
-</body>
-</html>
+{% endblock %}
