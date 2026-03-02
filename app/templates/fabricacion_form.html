@@ -23,48 +23,58 @@
         font-size: 16px;
         font-weight: 600;
     }
-    .material-item {
+    .preview-table {
+        width: 100%;
+        border-collapse: collapse;
         background: white;
-        border-left: 4px solid #2196F3;
-        padding: 12px;
-        margin-bottom: 12px;
-        border-radius: 4px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 12px;
     }
-    .material-name {
+    .preview-table thead {
+        background: #f0f0f0;
+        border-bottom: 2px solid #ddd;
+    }
+    .preview-table th {
+        padding: 12px;
+        text-align: left;
         font-weight: 600;
         color: #333;
-        margin-bottom: 6px;
+        font-size: 13px;
     }
-    .material-qty {
-        color: #666;
-        font-size: 14px;
-        margin-bottom: 8px;
-    }
-    .almacenes-list {
-        margin-left: 16px;
-        padding-top: 8px;
-        border-top: 1px solid #eee;
-    }
-    .almacen-source {
-        background: #e3f2fd;
-        border-left: 3px solid #1976d2;
-        padding: 8px 12px;
-        margin: 4px 0;
-        border-radius: 3px;
+    .preview-table td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
         font-size: 13px;
         color: #333;
     }
-    .almacen-source strong {
-        color: #1976d2;
+    .preview-table tbody tr:last-child td {
+        border-bottom: none;
     }
-    .error-material {
+    .preview-table tr.error-row {
         background: #ffebee;
-        border-left-color: #d32f2f;
+    }
+    .preview-table tr.error-row td {
         color: #c62828;
     }
-    .error-material .almacen-source {
-        background: #ffcccc;
-        border-left-color: #c62828;
+    .almacenes-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .almacenes-list li {
+        padding: 4px 0;
+        line-height: 1.4;
+    }
+    .almacen-item {
+        color: #1976d2;
+        font-weight: 500;
+    }
+    .almacen-error {
+        color: #d32f2f;
+        font-weight: 600;
+        margin-top: 6px;
     }
     .loading {
         text-align: center;
@@ -166,35 +176,48 @@
             }
 
             if (data.materiales && data.materiales.length > 0) {
-                let html = '';
+                let html = `
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Artículo</th>
+                                <th style="width: 120px; text-align: center;">Cantidad</th>
+                                <th>Almacenes de Origen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
                 data.materiales.forEach(material => {
                     const hasError = material.pendiente > 0;
-                    const materialClass = hasError ? 'material-item error-material' : 'material-item';
+                    const rowClass = hasError ? 'error-row' : '';
                     
-                    html += `
-                        <div class="${materialClass}">
-                            <div class="material-name">${material.articulo}</div>
-                            <div class="material-qty">Total necesario: <strong>${material.cantidad_total} unidades</strong></div>
-                    `;
-                    
+                    let almacenesHtml = '';
                     if (material.almacenes.length > 0) {
-                        html += '<div class="almacenes-list">';
+                        almacenesHtml = '<ul class="almacenes-list">';
                         material.almacenes.forEach(source => {
-                            html += `
-                                <div class="almacen-source">
-                                    <strong>${source.almacen}:</strong> ${source.cantidad} unidades
-                                </div>
-                            `;
+                            almacenesHtml += `<li><span class="almacen-item">${source.almacen}:</span> ${source.cantidad} un.</li>`;
                         });
-                        html += '</div>';
+                        almacenesHtml += '</ul>';
                     }
                     
                     if (hasError) {
-                        html += `<div style="color: #c62828; font-size: 13px; margin-top: 8px; font-weight: 600;">❌ Pendiente: ${material.pendiente} unidades (stock insuficiente)</div>`;
+                        almacenesHtml += `<div class="almacen-error">❌ Falta: ${material.pendiente} unidades</div>`;
                     }
                     
-                    html += '</div>';
+                    html += `
+                        <tr class="${rowClass}">
+                            <td><strong>${material.articulo}</strong></td>
+                            <td style="text-align: center;"><strong>${material.cantidad_total}</strong></td>
+                            <td>${almacenesHtml}</td>
+                        </tr>
+                    `;
                 });
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
                 previewContent.innerHTML = html;
             } else {
                 previewContent.innerHTML = '<div style="color: #999; padding: 12px;">No hay materiales requeridos</div>';
