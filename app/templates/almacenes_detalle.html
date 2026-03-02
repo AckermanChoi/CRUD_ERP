@@ -299,13 +299,12 @@
                     <td>{{ articulo.articulo_id }}</td>
                     <td>{{ articulo.nombre }}</td>
                     <td>{{ articulo.cantidad|int }} unidades</td>
-                    <td>
+                    <td style="text-align: center; display: flex; gap: 8px; justify-content: center;">
+                        <a href="/compras/nuevo?articulo_id={{ articulo.articulo_id }}" class="btn btn-sm btn-primary" title="Comprar más unidades">Comprar</a>
                         {% if has_permission('delete') %}
                         <form method="POST" action="/almacenes/{{ almacen.id }}/articulos/{{ articulo.articulo_id }}/eliminar" style="display:inline;">
                             <button type="submit" class="btn btn-sm btn-danger" data-confirm="¿Eliminar este artículo del almacén?">Eliminar</button>
                         </form>
-                        {% else %}
-                        -
                         {% endif %}
                     </td>
                 </tr>
