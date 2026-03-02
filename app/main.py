@@ -2272,6 +2272,119 @@ def fabricacion_detalle(id):
     return render_template("fabricacion_detalle.html", orden=orden, consumos=consumos)
 
 
+@app.route("/fabricacion/<int:id>/cancelar")
+@login_required
+@role_required(action='delete')
+def cancelar_fabricacion(id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        # Verificar que la orden existe y obtener sus datos
+        cursor.execute(
+            """
+            SELECT fo.id, fo.vehiculo_id, fo.cantidad, fo.almacen_destino_id, fo.estado
+            FROM fabricacion_ordenes fo
+            WHERE fo.id = %s
+            """,
+            (id,)
+        )
+        orden = cursor.fetchone()
+        
+        if not orden:
+            flash("Orden de fabricación no encontrada", "error")
+            db.close()
+            return redirect("/fabricacion")
+        
+        if orden['estado'] == 'cancelada':
+            flash("Esta orden ya está cancelada", "warning")
+            db.close()
+            return redirect("/fabricacion")
+        
+        # Obtener los consumos de la orden
+        cursor.execute(
+            """
+            SELECT articulo_id, almacen_origen_id, cantidad
+            FROM fabricacion_consumos
+            WHERE orden_id = %s
+            """,
+            (id,)
+        )
+        consumos = cursor.fetchall()
+        
+        # Revertir los consumos: devolver stock a almacenes de origen
+        cur_write = db.cursor()
+        for consumo in consumos:
+            cur_write.execute(
+                """
+                UPDATE existencias
+                SET cantidad = cantidad + %s
+                WHERE almacen_id = %s AND articulo_id = %s
+                """,
+                (consumo['cantidad'], consumo['almacen_origen_id'], consumo['articulo_id'])
+            )
+            
+            # Liberar capacidad en almacenes de origen
+            cur_write.execute(
+                """
+                UPDATE almacenes
+                SET disponible = disponible - %s
+                WHERE id = %s
+                """,
+                (consumo['cantidad'], consumo['almacen_origen_id'])
+            )
+        
+        # Eliminar vehículos del almacén destino
+        cur_write.execute(
+            """
+            UPDATE stock_vehiculos
+            SET cantidad = cantidad - %s
+            WHERE almacen_id = %s AND vehiculo_id = %s
+            """,
+            (orden['cantidad'], orden['almacen_destino_id'], orden['vehiculo_id'])
+        )
+        
+        # Eliminar entrada si la cantidad queda en 0
+        cur_write.execute(
+            """
+            DELETE FROM stock_vehiculos
+            WHERE almacen_id = %s AND vehiculo_id = %s AND cantidad <= 0
+            """,
+            (orden['almacen_destino_id'], orden['vehiculo_id'])
+        )
+        
+        # Liberar capacidad en almacén destino
+        cur_write.execute(
+            """
+            UPDATE almacenes
+            SET disponible = disponible + %s
+            WHERE id = %s
+            """,
+            (orden['cantidad'], orden['almacen_destino_id'])
+        )
+        
+        # Marcar la orden como cancelada
+        cur_write.execute(
+            """
+            UPDATE fabricacion_ordenes
+            SET estado = 'cancelada'
+            WHERE id = %s
+            """,
+            (id,)
+        )
+        
+        db.commit()
+        db.close()
+        flash("Orden de fabricación cancelada exitosamente", "success")
+        return redirect("/fabricacion")
+        
+    except Exception as e:
+        db.rollback()
+        db.close()
+        flash(f"Error al cancelar la orden: {e}", "error")
+        return redirect("/fabricacion")
+
+
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)

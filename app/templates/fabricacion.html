@@ -37,7 +37,12 @@
                 <td>{{ o.almacen_destino }}</td>
                 <td>{{ o.estado }}</td>
                 <td>
-                    <a href="/fabricacion/{{ o.id }}" class="btn btn-sm btn-primary">Ver</a>
+                    <div class="btn-group">
+                        <a href="/fabricacion/{{ o.id }}" class="btn btn-sm btn-primary">Ver</a>
+                        {% if o.estado != 'cancelada' %}
+                        <a href="/fabricacion/{{ o.id }}/cancelar" class="btn btn-sm btn-danger" data-confirm="¿Seguro que quieres cancelar esta orden de fabricación?">Cancelar</a>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}
